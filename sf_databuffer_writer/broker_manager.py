@@ -18,7 +18,7 @@ def audit_write_request(filename, write_request):
             audit_file.write("[%s] %s" % (current_time, json.dumps(write_request)))
 
     except Exception as e:
-        _logger.error("Error while trying to append request %s to file %s.", write_request, filename, e)
+        _logger.error("Error while trying to append request %s to file %s." % (write_request, filename), e)
 
 
 class BrokerManager(object):
@@ -29,10 +29,10 @@ class BrokerManager(object):
         if audit_filename is None:
             audit_filename = config.DEFAULT_AUDIT_FILENAME
         self.audit_filename = audit_filename
-        _logger.info("Writing requests audit log to file %s.", self.audit_filename)
+        _logger.info("Writing requests audit log to file %s." % self.audit_filename)
 
         self.channels = channels
-        _logger.info("Starting broker manager with channels %s.", self.channels)
+        _logger.info("Starting broker manager with channels %s." % self.channels)
 
         self.current_parameters = None
         self.current_start_pulse_id = None
@@ -81,7 +81,7 @@ class BrokerManager(object):
         self.current_start_pulse_id = start_pulse_id
 
     def stop_writer(self, stop_pulse_id):
-        _logger.info("Set stop_pulse_id=%d", stop_pulse_id)
+        _logger.info("Set stop_pulse_id=%d" % stop_pulse_id)
 
         data_api_request = {
             "channels": self.channels,
@@ -125,8 +125,8 @@ class StreamRequestSender(object):
         self.send_timeout = send_timeout
         self.mode = mode
 
-        _logger.info("Starting stream request sender with output_port=%s, queue_length=%s, send_timeout=%s and mode=%s",
-                     self.output_port, self.queue_length, self.send_timeout, self.mode)
+        _logger.info("Starting stream request sender with output_port=%s, queue_length=%s, send_timeout=%s and mode=%s"
+                     % (self.output_port, self.queue_length, self.send_timeout, self.mode))
 
         self.output_stream = Sender(port=self.output_port,
                                     queue_size=self.queue_length,
@@ -136,5 +136,5 @@ class StreamRequestSender(object):
         self.output_stream.open()
 
     def send(self, write_request):
-        _logger.info("Sending write write_request: %s", write_request)
+        _logger.info("Sending write write_request: %s" % write_request)
         self.output_stream.send(data=write_request)
