@@ -23,7 +23,7 @@ def audit_write_request(filename, write_request):
 
 
 class BrokerManager(object):
-    REQUIRED_PARAMETERS = ["general/created", "general/user", "general/process", "general/instrument"]
+    REQUIRED_PARAMETERS = ["general/created", "general/user", "general/process", "general/instrument", "output_file"]
 
     def __init__(self, channels, output_port, queue_length, send_timeout=None, mode=PUSH, audit_filename=None):
 
@@ -61,16 +61,10 @@ class BrokerManager(object):
 
     def get_status(self):
 
-        if self.current_parameters is None and self.current_start_pulse_id is None:
-            return "stopped"
-
-        if self.current_start_pulse_id is None:
-            return "waiting"
-
         if self.current_start_pulse_id is not None:
             return "writing"
 
-        return "error"
+        return "waiting"
 
     def stop(self):
         _logger.info("Stopping bsread broker session.")
