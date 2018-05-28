@@ -100,7 +100,9 @@ class BrokerManager(object):
                 "compression": "none"},
             "mapping": {
                 "incomplete": "fill-null"
-            }
+            },
+            "eventFields": ["channel", "pulseId", "value", "shape"],
+            "configFields": ["type"]
         }
 
         write_request = {
