@@ -4,6 +4,7 @@ import os
 import json
 from time import time
 
+import datetime
 import requests
 from bsread import source, PULL
 
@@ -25,8 +26,24 @@ def create_folders(output_file):
 
 
 def audit_failed_write_request(data_api_request, parameters):
-    # TODO: Write to a special file for audit.
-    pass
+
+    filename = None
+
+    write_request = {
+        "data_api_request": json.dumps(data_api_request),
+        "parameters": json.dumps(parameters)
+    }
+
+    try:
+        filename = parameters["output_file"] + ".err"
+
+        current_time = datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)
+
+        with open(filename) as audit_file:
+            audit_file.write("[%s] %s" % (current_time, json.dumps(write_request)))
+
+    except Exception as e:
+        _logger.error("Error while trying to write request %s to file %s", write_request, filename)
 
 
 def write_data_to_file(parameters, data):
