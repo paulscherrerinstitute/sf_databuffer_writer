@@ -103,3 +103,18 @@ class TestBrokerManager(unittest.TestCase):
         self.assertDictEqual(data_api_request, audit_data_api_request)
         self.assertDictEqual(request_parameters, audit_request_parameters)
 
+    def test_manager_status(self):
+        request_sender = MockRequestSender()
+        channels = []
+
+        manager = BrokerManager(request_sender, channels, TestBrokerManager.TEST_AUDIT_FILE)
+
+        self.assertEqual(manager.get_status(), "waiting")
+
+        manager.start_writer(100)
+
+        self.assertEqual(manager.get_status(), "writing")
+
+        manager.stop_writer(120)
+
+        self.assertEqual(manager.get_status(), "waiting")
