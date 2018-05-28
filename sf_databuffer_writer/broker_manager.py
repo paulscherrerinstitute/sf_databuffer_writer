@@ -1,6 +1,6 @@
 from bsread import PUSH
 import logging
-
+import json
 from bsread.sender import Sender
 
 from sf_databuffer_writer import config
@@ -85,8 +85,8 @@ class BrokerManager(object):
         }
 
         write_request = {
-            "data_api_request": data_api_request,
-            "parameters": self.current_parameters
+            "data_api_request": json.dumps(data_api_request),
+            "parameters": json.dumps(self.current_parameters)
         }
 
         self.current_start_pulse_id = None
@@ -96,9 +96,7 @@ class BrokerManager(object):
         self.request_sender.send(write_request)
 
     def get_statistics(self):
-        return {"start_pulse_id": self.start_pulse_id,
-                "stop_pulse_id": self.stop_pulse_id,
-                "last_pulse_id": self.last_pulse_id}
+        pass
 
 
 class StreamRequestSender(object):
@@ -120,4 +118,4 @@ class StreamRequestSender(object):
 
     def send(self, write_request):
         _logger.info("Sending write write_request: %s", write_request)
-        self.output_stream.send(data={"write_request": write_request})
+        self.output_stream.send(data=write_request)
