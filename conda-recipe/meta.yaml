@@ -1,0 +1,27 @@
+package:
+    name: sf_databuffer_writer
+    version: 0.0.1
+
+source:
+    path: ..
+
+build:
+    number: 0
+
+requirements:
+    build:
+        - python
+
+    run:
+        - python
+        - bsread >=1.1.0
+        - bottle
+        - requests
+
+build:
+  entry_points:
+    - sf_databuffer_writer = sf_bsread_writer.writer:run
+    - sf_databuffer_broker = sf_bsread_writer.broker:run
+
+about:
+    home: https://github.com/paulscherrerinstitute/sf_bsread_writer
