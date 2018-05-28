@@ -2,9 +2,10 @@ import argparse
 import logging
 
 import bottle
+from bsread import PUSH
 
 from sf_databuffer_writer import config
-from sf_databuffer_writer.broker_manager import BrokerManager
+from sf_databuffer_writer.broker_manager import BrokerManager, StreamRequestSender
 from sf_databuffer_writer.rest_api import register_rest_interface
 
 _logger = logging.getLogger(__name__)
@@ -15,7 +16,15 @@ def start_server(channels, output_port, queue_length, rest_port):
     _logger.debug("Setting queue length to %s.", queue_length)
 
     app = bottle.Bottle()
-    manager = BrokerManager(channels, output_port, queue_length)
+
+    request_sender = StreamRequestSender(output_port=output_port,
+                                         queue_length=queue_length,
+                                         send_timeout=config.DEFAULT_SEND_TIMEOUT,
+                                         mode=PUSH)
+
+    manager = BrokerManager(request_sender=request_sender,
+                            channels=channels)
+
     register_rest_interface(app, manager)
 
     _logger.info("Broker started.")

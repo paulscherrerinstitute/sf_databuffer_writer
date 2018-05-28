@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from bsread import PUSH
 import logging
 import json
 from bsread.sender import Sender
@@ -25,10 +24,7 @@ def audit_write_request(filename, write_request):
 class BrokerManager(object):
     REQUIRED_PARAMETERS = ["general/created", "general/user", "general/process", "general/instrument", "output_file"]
 
-    def __init__(self, channels, output_port, queue_length, send_timeout=None, mode=PUSH, audit_filename=None):
-
-        if send_timeout is None:
-            send_timeout = config.DEFAULT_SEND_TIMEOUT
+    def __init__(self, request_sender, channels, audit_filename=None):
 
         if audit_filename is None:
             audit_filename = config.DEFAULT_AUDIT_FILENAME
@@ -41,10 +37,7 @@ class BrokerManager(object):
         self.current_parameters = None
         self.current_start_pulse_id = None
 
-        self.request_sender = StreamRequestSender(output_port=output_port,
-                                                  queue_length=queue_length,
-                                                  send_timeout=send_timeout,
-                                                  mode=mode)
+        self.request_sender = request_sender
 
         self.statistics = {"n_processed_requests": 0,
                            "process_startup_time": datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)}
