@@ -43,7 +43,7 @@ def audit_failed_write_request(data_api_request, parameters):
             audit_file.write("[%s] %s" % (current_time, json.dumps(write_request)))
 
     except Exception as e:
-        _logger.error("Error while trying to write request %s to file %s", write_request, filename)
+        _logger.error("Error while trying to write request %s to file %s.", write_request, filename, e)
 
 
 def write_data_to_file(parameters, data):
