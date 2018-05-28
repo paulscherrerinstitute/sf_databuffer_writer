@@ -50,6 +50,10 @@ class TestBroker(unittest.TestCase):
                       "output_file": "test.h5"}
 
         with source(host="localhost", port=self.stream_output_port, mode=PULL, receive_timeout=500) as input_stream:
+
+            status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
+            self.assertEqual(status, "waiting")
+
             message = input_stream.receive()
             self.assertIsNone(message)
 
@@ -58,15 +62,24 @@ class TestBroker(unittest.TestCase):
             message = input_stream.receive()
             self.assertIsNone(message)
 
+            status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
+            self.assertEqual(status, "waiting")
+
             requests.put("http://localhost:%d/start_pulse_id/%d" % (self.rest_port, start_pulse_id))
 
             message = input_stream.receive()
             self.assertIsNone(message)
 
+            status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
+            self.assertEqual(status, "writing")
+
             requests.put("http://localhost:%d/stop_pulse_id/%d" % (self.rest_port, stop_pulse_id))
 
             message = input_stream.receive()
             self.assertIsNotNone(message)
+
+            status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
+            self.assertEqual(status, "waiting")
 
             self.assertTrue("data_api_request" in message.data.data)
             self.assertTrue("parameters" in message.data.data)
@@ -94,15 +107,24 @@ class TestBroker(unittest.TestCase):
             message = input_stream.receive()
             self.assertIsNone(message)
 
+            status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
+            self.assertEqual(status, "waiting")
+
             requests.put("http://localhost:%d/start_pulse_id/%d" % (self.rest_port, start_pulse_id))
 
             message = input_stream.receive()
             self.assertIsNone(message)
 
+            status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
+            self.assertEqual(status, "writing")
+
             requests.put("http://localhost:%d/stop_pulse_id/%d" % (self.rest_port, stop_pulse_id))
 
             message = input_stream.receive()
             self.assertIsNotNone(message)
+
+            status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
+            self.assertEqual(status, "waiting")
 
             self.assertTrue("data_api_request" in message.data.data)
             self.assertTrue("parameters" in message.data.data)
@@ -113,3 +135,14 @@ class TestBroker(unittest.TestCase):
             self.assertDictEqual(received_parameters, parameters)
             self.assertEqual(received_data_api_request["range"]["startPulseId"], start_pulse_id)
             self.assertEqual(received_data_api_request["range"]["endPulseId"], stop_pulse_id)
+
+        statistics = requests.get("http://localhost:%d/statistics" % self.rest_port).json()["statistics"]
+        self.assertEqual(statistics["n_processed_requests"], 2)
+
+        statistics_parameters = json.loads(statistics["last_sent_write_request"]["parameters"])
+        self.assertDictEqual(statistics_parameters, parameters)
+
+        with open(TestBroker.TEST_AUDIT_FILE) as input_file:
+            lines = input_file.readlines()
+
+        self.assertEqual(len(lines), 2)
