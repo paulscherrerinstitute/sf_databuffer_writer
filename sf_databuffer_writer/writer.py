@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import json
 
 from bsread import source, PULL
 
@@ -21,6 +22,10 @@ def create_folders(output_file):
         _logger.info("Folder '%s' already exists.", filename_folder)
 
 
+def write_file(parameters, data_api_request):
+    pass
+
+
 def process_requests(stream_address, receive_timeout=None, mode=PULL):
 
     if receive_timeout is None:
@@ -34,7 +39,25 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL):
     _logger.info("Connecting to broker host %s:%s.", source_host, source_port)
 
     with source(host=source_host, port=source_port, mode=mode, receive_timeout=receive_timeout) as input_stream:
-        pass
+
+        while True:
+            message = input_stream.receive()
+
+            if message is None:
+                continue
+
+            parameters = json.loads(message.data.data["parameters"].value)
+            data_api_request = json.loads(message.data.data["data_api_request"].value)
+
+            _logger.info("Received request to write file %s from startPulseId=%s to endPulseId=%s",
+                         parameters["output_file"],
+                         data_api_request["range"]["startPulseId"],
+                         data_api_request["range"]["endPulseId"])
+
+            _logger.debug("Writing parameters: %s", parameters)
+            _logger.debug("Data API request: %s", data_api_request)
+
+            write_file(parameters, data_api_request)
 
 
 def start_server(stream_address, user_id):
