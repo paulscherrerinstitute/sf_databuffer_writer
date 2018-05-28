@@ -80,7 +80,12 @@ class BrokerManager(object):
 
     def start_writer(self, start_pulse_id):
 
-        # TODO: Check if we are still waiting for the stop pulse id.
+        if self.current_start_pulse_id is not None:
+            _logger.warning("Previous acquisition was still running. The previous run will not be processed.")
+
+            _logger.warning({"current_parameters": self.current_parameters,
+                             "current_start_pulse_id": self.current_start_pulse_id,
+                             "new_start_pulse_id": start_pulse_id})
 
         _logger.info("Set start_pulse_id %d." % start_pulse_id)
         self.current_start_pulse_id = start_pulse_id
