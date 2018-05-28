@@ -2,9 +2,9 @@ import argparse
 import logging
 import os
 import json
+from datetime import datetime
 from time import time
 
-import datetime
 import requests
 from bsread import source, PULL
 

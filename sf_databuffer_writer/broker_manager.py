@@ -1,4 +1,5 @@
-import datetime
+from datetime import datetime
+
 from bsread import PUSH
 import logging
 import json
@@ -12,7 +13,6 @@ _logger = logging.getLogger(__name__)
 def audit_write_request(filename, write_request):
 
     try:
-
         current_time = datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)
 
         with open(filename, mode="a") as audit_file:
@@ -92,7 +92,7 @@ class BrokerManager(object):
             "channels": self.channels,
             "range": {
                 "startPulseId": self.current_start_pulse_id,
-                "endPulseId": self.stop_pulse_id},
+                "endPulseId": stop_pulse_id},
             "response": {
                 "format": "json",
                 "compression": "none"},

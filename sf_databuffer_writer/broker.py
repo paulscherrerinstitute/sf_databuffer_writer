@@ -52,7 +52,8 @@ def run():
 
     with open(arguments.channels_file) as input_file:
         file_lines = input_file.readlines()
-        channels = [channel.strip() for channel in file_lines if not channel.strip().startswith("#") and channel.strip()]
+        channels = [channel.strip() for channel in file_lines
+                    if not channel.strip().startswith("#") and channel.strip()]
 
     start_server(channels=channels,
                  output_port=arguments.output_port,
