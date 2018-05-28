@@ -46,6 +46,9 @@ class BrokerManager(object):
                                                   send_timeout=send_timeout,
                                                   mode=mode)
 
+        self.statistics = {"n_processed_requests": 0,
+                           "process_startup_time": datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)}
+
     def set_parameters(self, parameters):
 
         _logger.debug("Setting parameters %s." % parameters)
@@ -112,8 +115,12 @@ class BrokerManager(object):
 
         self.request_sender.send(write_request)
 
+        self.statistics["last_sent_write_request"] = write_request
+        self.statistics["last_sent_write_request_time"] = datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)
+        self.statistics["n_processed_requests"] += 1
+
     def get_statistics(self):
-        pass
+        return self.statistics
 
 
 class StreamRequestSender(object):
