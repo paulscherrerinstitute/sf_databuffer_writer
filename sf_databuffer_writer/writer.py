@@ -24,7 +24,13 @@ def create_folders(output_file):
         _logger.info("Folder '%s' already exists.", filename_folder)
 
 
+def audit_failed_write_request(data_api_request, parameters):
+    # TODO: Write to a special file for audit.
+    pass
+
+
 def write_data_to_file(parameters, data):
+    # TODO: Write the data file in correct format.
     pass
 
 
@@ -58,6 +64,9 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL):
 
         while True:
 
+            data_api_request = None
+            parameters = None
+
             try:
                 message = input_stream.receive()
 
@@ -81,8 +90,9 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL):
                 _logger.info("Data writing took %s seconds.", time() - start_time)
 
             except Exception as e:
-                # TODO: Log everything to a special file.
-                pass
+                audit_failed_write_request(data_api_request, parameters)
+
+                _logger.error("Error while trying to write a requested data range.", e)
 
 
 def start_server(stream_address, user_id):

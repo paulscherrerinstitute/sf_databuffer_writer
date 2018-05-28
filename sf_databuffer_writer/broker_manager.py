@@ -9,6 +9,7 @@ _logger = logging.getLogger(__name__)
 
 
 def audit_write_request(write_request):
+    # TODO: Write audit log about the send requests.
     print(write_request)
 
 
