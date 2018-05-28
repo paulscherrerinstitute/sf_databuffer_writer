@@ -12,7 +12,7 @@ _logger = logging.getLogger(__name__)
 DATA_DATASET_NAME = "data"
 
 
-class BsreadH5Writer(object):
+class DataBufferH5Writer(object):
     def __init__(self, output_file, parameters):
         self.output_file = output_file
         self.parameters = parameters
@@ -90,7 +90,7 @@ class BsreadH5Writer(object):
 
                 self._modify_channel_data_dataset(channel_group_name, channel_index, channel_definition)
 
-    def write_message(self, message):
+    def write_data(self, json_data):
         message_data = message.data
 
         self._verify_datasets(message_data)

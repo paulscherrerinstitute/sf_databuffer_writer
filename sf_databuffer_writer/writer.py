@@ -9,6 +9,7 @@ import requests
 from bsread import source, PULL
 
 from sf_databuffer_writer import config
+from sf_databuffer_writer.writer_format import DataBufferH5Writer
 
 _logger = logging.getLogger(__name__)
 
@@ -46,11 +47,14 @@ def audit_failed_write_request(data_api_request, parameters):
         _logger.error("Error while trying to write request %s to file %s.", write_request, filename, e)
 
 
-def write_data_to_file(parameters, data):
-    # TODO: Write the data file in correct format.
-    print(parameters)
-    print(data)
-    pass
+def write_data_to_file(parameters, json_data):
+    output_file = parameters["output_file"]
+
+    _logger.info("Writing data to output_file: %s", output_file)
+
+    writer = DataBufferH5Writer(output_file, parameters)
+    writer.write_data(json_data)
+    writer.close()
 
 
 def get_data_from_buffer(data_api_request):
