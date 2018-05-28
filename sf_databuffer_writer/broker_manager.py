@@ -1,3 +1,4 @@
+import datetime
 from bsread import PUSH
 import logging
 import json
@@ -8,18 +9,26 @@ from sf_databuffer_writer import config
 _logger = logging.getLogger(__name__)
 
 
-def audit_write_request(write_request):
-    # TODO: Write audit log about the send requests.
-    print(write_request)
+def audit_write_request(filename, write_request):
+
+    current_time = datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)
+
+    with open(filename, mode="a") as audit_file:
+        audit_file.write("[%s] %s" % (current_time, json.dumps(write_request)))
 
 
 class BrokerManager(object):
     REQUIRED_PARAMETERS = ["general/created", "general/user", "general/process", "general/instrument"]
 
-    def __init__(self, channels, output_port, queue_length, send_timeout=None, mode=PUSH):
+    def __init__(self, channels, output_port, queue_length, send_timeout=None, mode=PUSH, audit_filename=None):
 
         if send_timeout is None:
             send_timeout = config.DEFAULT_SEND_TIMEOUT
+
+        if audit_filename is None:
+            audit_filename = config.DEFAULT_AUDIT_FILENAME
+        self.audit_filename = audit_filename
+        _logger.info("Writing requests audit log to file %s.", self.audit_filename)
 
         self.channels = channels
         _logger.info("Starting broker manager with channels %s.", self.channels)
@@ -66,6 +75,8 @@ class BrokerManager(object):
 
     def start_writer(self, start_pulse_id):
 
+        # TODO: Check if we are still waiting for the stop pulse id.
+
         _logger.info("Set start_pulse_id %d." % start_pulse_id)
         self.current_start_pulse_id = start_pulse_id
 
@@ -93,7 +104,8 @@ class BrokerManager(object):
         self.current_start_pulse_id = None
         self.current_parameters = None
 
-        audit_write_request(write_request)
+        audit_write_request(self.audit_filename, write_request)
+
         self.request_sender.send(write_request)
 
     def get_statistics(self):

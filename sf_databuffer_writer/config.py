@@ -6,4 +6,8 @@ DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_SEND_TIMEOUT = 1000
 DEFAULT_RECEIVE_TIMEOUT = 1000
 
+AUDIT_FILE_TIME_FORMAT = "%Y%m%d-%H%M%S"
+
+DEFAULT_AUDIT_FILENAME = "/var/log/sf_databuffer_audit.log"
+
 DATA_API_QUERY_ADDRESS = "https://data-api.psi.ch/sf/query"
