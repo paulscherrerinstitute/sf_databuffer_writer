@@ -48,6 +48,8 @@ def audit_failed_write_request(data_api_request, parameters):
 
 def write_data_to_file(parameters, data):
     # TODO: Write the data file in correct format.
+    print(parameters)
+    print(data)
     pass
 
 
