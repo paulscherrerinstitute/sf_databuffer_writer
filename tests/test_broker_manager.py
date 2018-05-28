@@ -72,3 +72,34 @@ class TestBrokerManager(unittest.TestCase):
         self.assertEqual(data_api_request["range"]["endPulseId"], stop_pulse_id)
 
         self.assertDictEqual(request_parameters, parameters)
+
+    def test_audit_file(self):
+        request_sender = MockRequestSender()
+        channels = ["test_1", "test_2"]
+        start_pulse_id = 100
+        stop_pulse_id = 120
+        parameters = {"general/created": "test",
+                      "general/user": "tester",
+                      "general/process": "test_process",
+                      "general/instrument": "mac",
+                      "output_file": "test.h5"}
+
+        manager = BrokerManager(request_sender, channels, TestBrokerManager.TEST_AUDIT_FILE)
+
+        manager.set_parameters(parameters)
+        manager.start_writer(start_pulse_id)
+        manager.stop_writer(stop_pulse_id)
+
+        data_api_request = json.loads(request_sender.write_request["data_api_request"])
+        request_parameters = json.loads(request_sender.write_request["parameters"])
+
+        with open(TestBrokerManager.TEST_AUDIT_FILE) as input_file:
+            lines = input_file.readlines()
+
+        audit_log = json.loads(lines[0][18:])
+        audit_data_api_request = json.loads(audit_log["data_api_request"])
+        audit_request_parameters = json.loads(audit_log["parameters"])
+
+        self.assertDictEqual(data_api_request, audit_data_api_request)
+        self.assertDictEqual(request_parameters, audit_request_parameters)
+
