@@ -1,5 +1,4 @@
 import logging
-from time import time
 
 import h5py
 import numpy
@@ -20,90 +19,46 @@ class DataBufferH5Writer(object):
         self.h5_writer = Writer()
         self.h5_writer.open_file(self.output_file)
 
-        self.cached_channel_definitions = None
-        self.first_iteration = True
-        self.data_header_hash = None
+    def _create_datasets(self, datasets_definition):
 
-    def prune_and_close(self, stop_pulse_id):
-        start_time = time()
-        _logger.info("Starting to close the file.")
+        self._prepare_format_datasets()
 
-        self.close()
-        _logger.info("File closed in %s seconds.", time() - start_time)
+        # Interpret the data header and add required datasets.
+        for dataset in datasets_definition:
 
-    def _verify_datasets(self, message_data):
-
-        # Data header is present in the message only when it has changed (or first message).
-        if "data_header" not in message_data:
-            raise ValueError("Data header not present in message: %s", message_data)
-
-        data_header = message_data['data_header']
-        data_header_hash = message_data["header"]["hash"]
-        data_values = message_data["data"]
-        n_channels = len(data_header['channels'])
-
-        if self.first_iteration:
-            self._prepare_format_datasets()
-
-            n_channels = len(data_header['channels'])
-            self.cached_channel_definitions = [None] * n_channels
-
-            self.first_iteration = False
-
-        if n_channels != len(self.cached_channel_definitions):
-            raise ValueError("Number of channels in the stream changed."
-                             "\nOriginal channels: %s\nNew data header: %s" %
-                             (self.cached_channel_definitions, data_header))
-
-        # Nothing to do if the data header is the same.
-        if self.data_header_hash == message_data["header"]["hash"]:
-            return
-
-        _logger.info("Data header change detected.")
-        self.data_header_hash = data_header_hash
-
-        # Interpret the data header and add required datasets
-        for channel_index, channel_definition in enumerate(data_header['channels']):
-
-            channel_name = channel_definition['name']
-            channel_value = data_values[channel_index]
+            channel_name = dataset["name"]
+            channel_type = dataset["type"]
+            channel_shape = dataset["shape"]
 
             channel_group_name = '/data/' + channel_name + "/"
 
-            # New channel.
-            if self.cached_channel_definitions[channel_index] is None:
+            _logger.debug("Creating datasets for channel_name '%s', type=%s, shape=%s.",
+                          channel_name, channel_type, channel_shape)
 
-                _logger.debug("Creating datasets for channel_name '%s' at index %d.", channel_name, channel_index)
+            self.h5_writer.add_dataset(channel_group_name + 'pulse_id', dataset_group_name='pulse_id', dtype='i8')
+            self.h5_writer.add_dataset(channel_group_name + 'is_data_present', dataset_group_name='is_data_present',
+                                       dtype='u1')
 
-                self.h5_writer.add_dataset(channel_group_name + 'pulse_id', dataset_group_name='pulse_id', dtype='i8')
-                self.h5_writer.add_dataset(channel_group_name + 'is_data_present', dataset_group_name='is_data_present',
-                                           dtype='u1')
-
-                self._setup_channel_data_dataset(channel_group_name, channel_index, channel_definition, channel_value)
-
-            # A channel change counts only when data is present - otherwise we are not sure if data header is correct.
-            elif channel_value is not None and self.cached_channel_definitions[channel_index] != channel_definition:
-
-                _logger.info("Channel definition changed for channel_name '%s'."
-                             "\nOld definition: %s\nNew definition%s.",
-                             channel_name, self.cached_channel_definitions[channel_index], channel_definition)
-
-                self._modify_channel_data_dataset(channel_group_name, channel_index, channel_definition)
+            self._setup_channel_data_dataset(channel_group_name, channel_type, channel_shape)
 
     def write_data(self, json_data):
-        message_data = message.data
 
-        self._verify_datasets(message_data)
+        datasets_to_create = [{"name": entry["channel"]["name"],
+                               "type": entry["configs"][0]["type"],
+                               "shape": entry["configs"][0]["shape"]} for entry in json_data["meta"]]
 
-        data = message_data['data']
+        self._create_datasets(datasets_to_create)
 
-        self.h5_writer.write(data, dataset_group_name='data')
+        for pulse_data in json_data["data"]:
 
-        self.h5_writer.write(message_data['pulse_ids'], dataset_group_name='pulse_id')
+            values = (x["value"] for x in pulse_data)
+            self.h5_writer.write(values, dataset_group_name='data')
 
-        # Because some channels might not be decoded properly, we have to write if data is written in a specific cell.
-        is_data_valid = [1 if data_point is not None else 0 for data_point in data]
-        self.h5_writer.write(is_data_valid, dataset_group_name='is_data_present')
+            pulse_ids = (x["pulseId"] for x in pulse_data)
+            self.h5_writer.write(pulse_ids, dataset_group_name='pulse_id')
+
+            is_data_valid = [1 if data_point is not None else 0 for data_point in pulse_ids]
+            self.h5_writer.write(is_data_valid, dataset_group_name='is_data_present')
 
     def _prepare_format_datasets(self):
 
@@ -121,53 +76,25 @@ class DataBufferH5Writer(object):
         self.h5_writer.file.create_dataset("/general/user",
                                            data=numpy.string_(self.parameters["general/user"]))
 
-    def _get_channel_data_dataset_definition(self, channel_definition):
-
-        type_name = channel_definition.get('type', "float64")
-        shape = channel_definition.get('shape', [1])
+    def _get_channel_data_dataset_definition(self, dtype, shape):
 
         dataset_shape = [1] + shape[::-1]
         dataset_max_shape = [None] + shape[::-1]
-        dataset_type = channel_type_deserializer_mapping[type_name][0]
+        dataset_type = channel_type_deserializer_mapping[dtype][0]
 
-        if type_name == "string":
+        if dtype == "string":
             dataset_shape = [1]
             dataset_max_shape = [None]
             dataset_type = h5py.special_dtype(vlen=str)
 
         return dataset_type, dataset_shape, dataset_max_shape
 
-    def _setup_channel_data_dataset(self, channel_group_name, channel_index, channel_definition, channel_value):
+    def _setup_channel_data_dataset(self, channel_group_name, channel_type, channel_shape):
 
-        # If we do not have a channel value we cannot be sure that the header is correct or just default.
-        if channel_value is None:
-            _logger.info("No data for channel_name '%s' was received. Creating dataset stub.",
-                         channel_definition['name'])
+        dtype, dataset_shape, dataset_max_shape = self._get_channel_data_dataset_definition(channel_type, channel_shape)
 
-            self.h5_writer.add_dataset_stub(dataset_group_name='data',
-                                            dataset_name=channel_group_name + DATA_DATASET_NAME)
-
-            self.cached_channel_definitions[channel_index] = {}
-
-        else:
-            dtype, dataset_shape, dataset_max_shape = self._get_channel_data_dataset_definition(channel_definition)
-
-            self.h5_writer.add_dataset(channel_group_name + 'data', dataset_group_name='data', shape=dataset_shape,
-                                       maxshape=dataset_max_shape, dtype=dtype)
-
-            self.cached_channel_definitions[channel_index] = channel_definition
-
-    def _modify_channel_data_dataset(self, channel_group_name, channel_index, channel_definition):
-
-        dtype, dataset_shape, dataset_max_shape = self._get_channel_data_dataset_definition(channel_definition)
-
-        self.h5_writer.replace_dataset(dataset_group_name="data",
-                                       dataset_name=channel_group_name + DATA_DATASET_NAME,
-                                       dtype=dtype,
-                                       shape=dataset_shape,
-                                       maxshape=dataset_max_shape)
-
-        self.cached_channel_definitions[channel_index] = channel_definition
+        self.h5_writer.add_dataset(channel_group_name + 'data', dataset_group_name='data', shape=dataset_shape,
+                                   maxshape=dataset_max_shape, dtype=dtype)
 
     def close(self):
         self.h5_writer.close_file()
