@@ -2,7 +2,9 @@ import argparse
 import logging
 import os
 import json
+from time import time
 
+import requests
 from bsread import source, PULL
 
 from sf_databuffer_writer import config
@@ -22,8 +24,22 @@ def create_folders(output_file):
         _logger.info("Folder '%s' already exists.", filename_folder)
 
 
-def write_file(parameters, data_api_request):
+def write_data_to_file(parameters, data):
     pass
+
+
+def get_data_from_buffer(data_api_request):
+
+    _logger.info("Loading data from from startPulseId=%s to endPulseId=%s.",
+                 data_api_request["range"]["startPulseId"], data_api_request["range"]["endPulseId"])
+
+    _logger.debug("Data API request: %s", data_api_request)
+    response = requests.post(url=config.DATA_API_QUERY_ADDRESS, json=data_api_request)
+
+    if not response.ok:
+        raise RuntimeError("Error while trying to get data from the dispatching layer.", response.text)
+
+    return response.json()
 
 
 def process_requests(stream_address, receive_timeout=None, mode=PULL):
@@ -41,23 +57,32 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL):
     with source(host=source_host, port=source_port, mode=mode, receive_timeout=receive_timeout) as input_stream:
 
         while True:
-            message = input_stream.receive()
 
-            if message is None:
-                continue
+            try:
+                message = input_stream.receive()
 
-            parameters = json.loads(message.data.data["parameters"].value)
-            data_api_request = json.loads(message.data.data["data_api_request"].value)
+                if message is None:
+                    continue
 
-            _logger.info("Received request to write file %s from startPulseId=%s to endPulseId=%s",
-                         parameters["output_file"],
-                         data_api_request["range"]["startPulseId"],
-                         data_api_request["range"]["endPulseId"])
+                data_api_request = json.loads(message.data.data["data_api_request"].value)
+                parameters = json.loads(message.data.data["parameters"].value)
 
-            _logger.debug("Writing parameters: %s", parameters)
-            _logger.debug("Data API request: %s", data_api_request)
+                _logger.info("Received request to write file %s from startPulseId=%s to endPulseId=%s",
+                             parameters["output_file"],
+                             data_api_request["range"]["startPulseId"],
+                             data_api_request["range"]["endPulseId"])
 
-            write_file(parameters, data_api_request)
+                start_time = time()
+                data = get_data_from_buffer(data_api_request)
+                _logger.info("Data retrieval took %s seconds.", time() - start_time)
+
+                start_time = time()
+                write_data_to_file(parameters, data)
+                _logger.info("Data writing took %s seconds.", time() - start_time)
+
+            except Exception as e:
+                # TODO: Log everything to a special file.
+                pass
 
 
 def start_server(stream_address, user_id):
