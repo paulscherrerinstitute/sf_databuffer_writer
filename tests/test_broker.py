@@ -113,5 +113,3 @@ class TestBroker(unittest.TestCase):
             self.assertDictEqual(received_parameters, parameters)
             self.assertEqual(received_data_api_request["range"]["startPulseId"], start_pulse_id)
             self.assertEqual(received_data_api_request["range"]["endPulseId"], stop_pulse_id)
-
-
