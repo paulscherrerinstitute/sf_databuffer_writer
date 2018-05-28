@@ -15,7 +15,7 @@ def audit_write_request(filename, write_request):
         current_time = datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)
 
         with open(filename, mode="a") as audit_file:
-            audit_file.write("[%s] %s" % (current_time, json.dumps(write_request)))
+            audit_file.write("[%s] %s\n" % (current_time, json.dumps(write_request)))
 
     except Exception as e:
         _logger.error("Error while trying to append request %s to file %s." % (write_request, filename), e)
