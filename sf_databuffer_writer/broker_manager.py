@@ -1,7 +1,9 @@
-from bsread import PULL
+from bsread import PUSH
 import logging
 
 from bsread.sender import Sender
+
+from sf_databuffer_writer import config
 
 _logger = logging.getLogger(__name__)
 
@@ -13,7 +15,10 @@ def audit_write_request(write_request):
 class BrokerManager(object):
     REQUIRED_PARAMETERS = ["general/created", "general/user", "general/process", "general/instrument"]
 
-    def __init__(self, channels, output_port, queue_length, send_timeout=1000, mode=PULL):
+    def __init__(self, channels, output_port, queue_length, send_timeout=None, mode=PUSH):
+
+        if send_timeout is None:
+            send_timeout = config.DEFAULT_SEND_TIMEOUT
 
         self.channels = channels
         _logger.info("Starting broker manager with channels %s.", self.channels)

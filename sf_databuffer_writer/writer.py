@@ -2,7 +2,9 @@ import argparse
 import logging
 import os
 
-from bsread import source
+from bsread import source, PULL
+
+from sf_databuffer_writer import config
 
 _logger = logging.getLogger(__name__)
 
@@ -19,8 +21,20 @@ def create_folders(output_file):
         _logger.info("Folder '%s' already exists.", filename_folder)
 
 
-def process_requests(stream_address):
-    pass
+def process_requests(stream_address, receive_timeout=None, mode=PULL):
+
+    if receive_timeout is None:
+        receive_timeout = config.DEFAULT_RECEIVE_TIMEOUT
+
+    source_host, source_port = stream_address.rsplit(":", maxsplit=1)
+
+    source_host = source_host.split("//")[1]
+    source_port = int(source_port)
+
+    _logger.info("Connecting to broker host %s:%s.", source_host, source_port)
+
+    with source(host=source_host, port=source_port, mode=mode, receive_timeout=receive_timeout) as input_stream:
+        pass
 
 
 def start_server(stream_address, user_id):
