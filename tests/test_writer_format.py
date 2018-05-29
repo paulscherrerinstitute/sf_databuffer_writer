@@ -5,6 +5,7 @@ import os
 
 import h5py
 
+from sf_databuffer_writer.writer import write_data_to_file
 from sf_databuffer_writer.writer_format import DataBufferH5Writer
 
 
@@ -27,7 +28,7 @@ class TestWriter(unittest.TestCase):
                       "general/user": "tester",
                       "general/process": "test_process",
                       "general/instrument": "mac",
-                      "output_file": "test.h5"}
+                      "output_file": self.TEST_OUTPUT_FILE}
 
         # Request used to retrieve the the sample data.
         # {'channels': ['SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED',
@@ -43,9 +44,7 @@ class TestWriter(unittest.TestCase):
         with open(test_data_file, 'r') as input_file:
             json_data = json.load(input_file)
 
-        writer = DataBufferH5Writer(self.TEST_OUTPUT_FILE, parameters)
-        writer.write_data(json_data)
-        writer.close()
+        write_data_to_file(parameters, json_data)
 
         file = h5py.File(TestWriter.TEST_OUTPUT_FILE)
 
