@@ -40,7 +40,7 @@ def audit_failed_write_request(data_api_request, parameters):
 
         current_time = datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)
 
-        with open(filename) as audit_file:
+        with open(filename, "w") as audit_file:
             audit_file.write("[%s] %s" % (current_time, json.dumps(write_request)))
 
     except Exception as e:
