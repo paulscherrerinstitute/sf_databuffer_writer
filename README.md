@@ -140,3 +140,43 @@ In the API description, localhost and port 8888 are assumed. Please change this 
 
 <a id="audit_trail"></a>  
 ## Audit Trail
+
+The audit trail (for the broker) and the .err file (for the writer) have the same format. Each line in the 
+audit trail of the broker (the .err file has always only 1 line) is:
+```
+# Timestamp         Writing request JSON String
+[%Y%m%d-%H%M%S]     {"parameters": "{\"general/instrument\": \"Alvra, JF 4.5M\", \"general/created\":....
+```
+
+To read and interpret this line with Python:
+```python
+import json
+
+# The filename can be replaced with an .err file.
+with open("/var/log/sf_databuffer_audit.log") as audit_trail:
+    lines = audit_trail.readlines()
+    
+for line in lines:
+    timestamp = line[1:16]
+    json_string = line[18:]
+    
+    # This writing request can be manually submitted to the writer, to try writing the file manually.
+    writing_request = json.loads(json_string)
+    
+    print(writing_request)
+```
+### Writing request
+
+### Writing files from audit trail manually
+Files can be written using the **sf_databuffer_writer.writer.get_data_from_buffer** and 
+**sf_databuffer_writer.writer.write_data_to_file** method.
+
+```python
+from sf_databuffer_writer.writer import get_data_from_buffer, write_data_to_file
+
+# You should load this from the audit trail or from the .err file.
+writing_request = {"parameters": {}, "data_api_request": {}}
+
+data = get_data_from_buffer(writing_request["data_api_request"])
+write_data_to_file(writing_request["parameters"], data)
+```
