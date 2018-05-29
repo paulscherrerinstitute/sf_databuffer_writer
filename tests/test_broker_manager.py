@@ -109,12 +109,22 @@ class TestBrokerManager(unittest.TestCase):
 
         manager = BrokerManager(request_sender, channels, TestBrokerManager.TEST_AUDIT_FILE)
 
-        self.assertEqual(manager.get_status(), "waiting")
+        self.assertEqual(manager.get_status(), "stopped")
+
+        parameters = {"general/created": "test",
+                      "general/user": "tester",
+                      "general/process": "test_process",
+                      "general/instrument": "mac",
+                      "output_file": "test.h5"}
+
+        manager.set_parameters(parameters)
+
+        self.assertEqual(manager.get_status(), "configured")
 
         manager.start_writer(100)
 
-        self.assertEqual(manager.get_status(), "writing")
+        self.assertEqual(manager.get_status(), "receiving")
 
         manager.stop_writer(120)
 
-        self.assertEqual(manager.get_status(), "waiting")
+        self.assertEqual(manager.get_status(), "stopped")

@@ -73,18 +73,18 @@ class TestWriter(unittest.TestCase):
                       "output_file": TestWriter.TEST_OUTPUT_FILE}
 
         status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
-        self.assertEqual(status, "waiting")
+        self.assertEqual(status, "stopped")
 
         requests.post("http://localhost:%d/parameters" % self.rest_port, json=parameters)
         requests.put("http://localhost:%d/start_pulse_id/%d" % (self.rest_port, start_pulse_id))
 
         status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
-        self.assertEqual(status, "writing")
+        self.assertEqual(status, "receiving")
 
         requests.put("http://localhost:%d/stop_pulse_id/%d" % (self.rest_port, stop_pulse_id))
 
         status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
-        self.assertEqual(status, "waiting")
+        self.assertEqual(status, "stopped")
 
         # Wait for the chain to complete.
         sleep(2)

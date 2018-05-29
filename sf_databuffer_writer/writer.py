@@ -120,11 +120,11 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retri
 
                 start_time = time()
                 data = get_data_from_buffer(data_api_request)
-                _logger.info("Data retrieval took %s seconds." % time() - start_time)
+                _logger.info("Data retrieval took %s seconds." % (time() - start_time))
 
                 start_time = time()
                 write_data_to_file(parameters, data)
-                _logger.info("Data writing took %s seconds." % time() - start_time)
+                _logger.info("Data writing took %s seconds." % (time() - start_time))
 
             except Exception as e:
                 audit_failed_write_request(data_api_request, parameters)
