@@ -167,7 +167,11 @@ for line in lines:
     # This writing request can be manually submitted to the writer, to try writing the file manually.
     writing_request = json.loads(json_string)
     
-    print(writing_request)
+    data_api_request = json.loads(writing_request["data_api_request"])
+    parameters = json.loads(writing_request["parameters"])
+    
+    print(data_api_request)
+    print(parameters)
 ```
 ### Writing request
 Writing request is a dictionary with 2 values:
@@ -185,8 +189,9 @@ Files can be written using the **sf_databuffer_writer.writer.get_data_from_buffe
 from sf_databuffer_writer.writer import get_data_from_buffer, write_data_to_file
 
 # You should load this from the audit trail or from the .err file.
-writing_request = {"parameters": {}, "data_api_request": {}}
+parameters = {}
+data_api_request = {}
 
-data = get_data_from_buffer(writing_request["data_api_request"])
-write_data_to_file(writing_request["parameters"], data)
+data = get_data_from_buffer(data_api_request)
+write_data_to_file(parameters)
 ```
