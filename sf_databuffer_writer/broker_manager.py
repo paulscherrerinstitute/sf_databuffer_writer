@@ -119,7 +119,7 @@ class BrokerManager(object):
         if not self.audit_trail_only:
             self.request_sender.send(write_request)
         else:
-            _logger.info("Writing request to audit trail only (broker running with --audit_trail_only).")
+            _logger.warning("Writing request to audit trail only (broker running with --audit_trail_only).")
 
         self.statistics["last_sent_write_request"] = write_request
         self.statistics["last_sent_write_request_time"] = datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)
