@@ -49,6 +49,8 @@ class DataBufferH5Writer(object):
 
         self._create_datasets(datasets_to_create)
 
+        _logger.info("Started writing data to disk.")
+
         for pulse_data in json_data["data"]:
 
             values = [x["value"] for x in pulse_data]
