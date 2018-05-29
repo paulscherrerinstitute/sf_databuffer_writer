@@ -24,6 +24,8 @@ and last pulse id.)
 - Writer (receives the writing request from the broker over ZMQ and downloads + writes the data)
 
 ### Broker
+**Entry point**: sf_databuffer_writer/broker.py
+
 Broker runs as a systemd service **/etc/systemd/system/broker.service**. It writes the audit log of all the sent requests in 
 **/var/log/sf\_databuffer\_audit.log** by default. This can be changed with the config.DEFAULT_AUDIT_FILENAME 
 parameter.
@@ -31,7 +33,13 @@ parameter.
 The broker is supposed to run all the time. Even if writing from the data_api does not work, it is still useful 
 to have an audit trail of requests you can repeat.
 
+In case of problems with the communication between the broker and the writer, you can run the broker with the 
+**--audit\_trail\_only** flag, which will prevent the sending out of requests over ZMQ (the requests will only be written 
+in the config.DEFAULT_AUDIT_FILENAME file).
+
 ### Writer
+**Entry point**: sf_databuffer_writer/writer.py
+
 Writer runs as a systemd service **/etc/systemd/system/broker\_writer1.service**. If for some reason it cannot 
 write the requested data, it creates a file called **output_file**.err where the writing request is written down 
 (this can be used for later data download).
