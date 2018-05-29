@@ -11,6 +11,8 @@ _logger = logging.getLogger(__name__)
 
 def audit_write_request(filename, write_request):
 
+    _logger.info("Writing request to audit trail file %s." % filename)
+
     try:
         current_time = datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)
 
