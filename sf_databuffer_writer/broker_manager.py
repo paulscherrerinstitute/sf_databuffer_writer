@@ -60,6 +60,9 @@ class BrokerManager(object):
         if self.current_start_pulse_id is not None and self.current_parameters is not None:
             return "receiving"
 
+        if self.current_parameters is not None:
+            return "configured"
+
         return "stopped"
 
     def stop(self):
