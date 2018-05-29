@@ -51,10 +51,10 @@ class DataBufferH5Writer(object):
 
         for pulse_data in json_data["data"]:
 
-            values = (x["value"] for x in pulse_data)
+            values = [x["value"] for x in pulse_data]
             self.h5_writer.write(values, dataset_group_name='data')
 
-            pulse_ids = (x["pulseId"] for x in pulse_data)
+            pulse_ids = [x["pulseId"] for x in pulse_data]
             self.h5_writer.write(pulse_ids, dataset_group_name='pulse_id')
 
             is_data_valid = [1 if data_point is not None else 0 for data_point in pulse_ids]
