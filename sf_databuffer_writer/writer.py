@@ -55,6 +55,9 @@ def write_data_to_file(parameters, json_data):
     if not json_data:
         raise ValueError("Received data from data_api is empty. json_data=%s" % json_data)
 
+    if not parameters:
+        raise ValueError("Received parameters from broker are empty. parameters=%s" % parameters)
+
     writer = DataBufferH5Writer(output_file, parameters)
     writer.write_data(json_data)
     writer.close()
