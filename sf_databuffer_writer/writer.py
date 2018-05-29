@@ -85,6 +85,7 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retri
     source_port = int(source_port)
 
     _logger.info("Connecting to broker host %s:%s.", source_host, source_port)
+    _logger.info("Using data_retrieval_delay=%s seconds.", data_retrieval_delay)
 
     with source(host=source_host, port=source_port, mode=mode, receive_timeout=receive_timeout) as input_stream:
 
