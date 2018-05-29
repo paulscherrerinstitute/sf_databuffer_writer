@@ -32,7 +32,13 @@ The broker is supposed to run all the time. Even if writing from the data_api do
 to have an audit trail of requests you can repeat.
 
 ### Writer
-Writer runs as a systemd service **/etc/systemd/system/broker\_writer1.service**.
+Writer runs as a systemd service **/etc/systemd/system/broker\_writer1.service**. If for some reason it cannot 
+write the requested data, it creates a file called **output_file**.err where the writing request is written down 
+(this can be used for later data download).
+
+The writer is supposed to run all the time - you can also have more than 1 writer - you need more systemd services.
+Just duplicate the /etc/systemd/system/broker_writer1.service multiple times. The communication between broker 
+and writer is push-pull (round robin), so multiple writers can be used for load balancing.
 
 <a id="build"></a>
 ## Build
