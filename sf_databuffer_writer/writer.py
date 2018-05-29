@@ -52,8 +52,6 @@ def write_data_to_file(parameters, json_data):
 
     _logger.info("Writing data to output_file: %s", output_file)
 
-    print(json_data)
-
     if not json_data:
         raise ValueError("Received data from data_api is empty. json_data=%s" % json_data)
 
