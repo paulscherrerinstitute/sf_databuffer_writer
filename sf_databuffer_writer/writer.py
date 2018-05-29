@@ -44,13 +44,18 @@ def audit_failed_write_request(data_api_request, parameters):
             audit_file.write("[%s] %s" % (current_time, json.dumps(write_request)))
 
     except Exception as e:
-        _logger.error("Error while trying to write request %s to file %s.", write_request, filename, e)
+        _logger.error("Error while trying to write request %s to file %s." % (write_request, filename), e)
 
 
 def write_data_to_file(parameters, json_data):
     output_file = parameters["output_file"]
 
     _logger.info("Writing data to output_file: %s", output_file)
+
+    print(json_data)
+
+    if not json_data:
+        raise ValueError("Received data from data_api is empty. json_data=%s" % json_data)
 
     writer = DataBufferH5Writer(output_file, parameters)
     writer.write_data(json_data)
@@ -84,8 +89,8 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retri
     source_host = source_host.split("//")[1]
     source_port = int(source_port)
 
-    _logger.info("Connecting to broker host %s:%s.", source_host, source_port)
-    _logger.info("Using data_retrieval_delay=%s seconds.", data_retrieval_delay)
+    _logger.info("Connecting to broker host %s:%s." % (source_host, source_port))
+    _logger.info("Using data_retrieval_delay=%s seconds." % data_retrieval_delay)
 
     with source(host=source_host, port=source_port, mode=mode, receive_timeout=receive_timeout) as input_stream:
 
@@ -103,10 +108,10 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retri
                 data_api_request = json.loads(message.data.data["data_api_request"].value)
                 parameters = json.loads(message.data.data["parameters"].value)
 
-                _logger.info("Received request to write file %s from startPulseId=%s to endPulseId=%s",
+                _logger.info("Received request to write file %s from startPulseId=%s to endPulseId=%s" % (
                              parameters["output_file"],
                              data_api_request["range"]["startPulseId"],
-                             data_api_request["range"]["endPulseId"])
+                             data_api_request["range"]["endPulseId"]))
 
                 _logger.info("Sleeping for %s seconds before calling the data api." % data_retrieval_delay)
                 sleep(data_retrieval_delay)
@@ -114,11 +119,11 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retri
 
                 start_time = time()
                 data = get_data_from_buffer(data_api_request)
-                _logger.info("Data retrieval took %s seconds.", time() - start_time)
+                _logger.info("Data retrieval took %s seconds." % time() - start_time)
 
                 start_time = time()
                 write_data_to_file(parameters, data)
-                _logger.info("Data writing took %s seconds.", time() - start_time)
+                _logger.info("Data writing took %s seconds." % time() - start_time)
 
             except Exception as e:
                 audit_failed_write_request(data_api_request, parameters)
