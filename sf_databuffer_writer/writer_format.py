@@ -53,14 +53,17 @@ class DataBufferH5Writer(object):
 
         for pulse_data in json_data["data"]:
 
-            values = [x["value"] for x in pulse_data]
-            self.h5_writer.write(values, dataset_group_name='data')
-
+            _logger.info("Writing pulseIds to disk.")
             pulse_ids = [x["pulseId"] for x in pulse_data]
             self.h5_writer.write(pulse_ids, dataset_group_name='pulse_id')
 
+            _logger.info("Writing is_data_valid to disk.")
             is_data_valid = [1 if data_point is not None else 0 for data_point in pulse_ids]
             self.h5_writer.write(is_data_valid, dataset_group_name='is_data_present')
+
+            _logger.info("Writing values to disk.")
+            values = [x["value"] for x in pulse_data]
+            self.h5_writer.write(values, dataset_group_name='data')
 
     def _prepare_format_datasets(self):
 
