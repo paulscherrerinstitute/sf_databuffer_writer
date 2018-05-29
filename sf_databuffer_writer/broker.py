@@ -41,9 +41,9 @@ def run():
 
     parser.add_argument("-c", "--channels_file", help="JSON file with channels to buffer.")
 
-    parser.add_argument('-o', '--output_port', default=config.DEFAULT_STREAM_OUTPUT_PORT,
+    parser.add_argument('-o', '--output_port', type=int, default=config.DEFAULT_STREAM_OUTPUT_PORT,
                         help="Port to bind the output stream to.")
-    parser.add_argument("-q", "--queue_length", default=config.DEFAULT_QUEUE_LENGTH,
+    parser.add_argument("-q", "--queue_length", type=int, default=config.DEFAULT_QUEUE_LENGTH,
                         help="Length of the zmq queue.")
 
     parser.add_argument("--rest_port", type=int, help="Port for REST api.", default=config.DEFAULT_BROKER_REST_PORT)
