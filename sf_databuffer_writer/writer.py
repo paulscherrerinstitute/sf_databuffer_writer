@@ -3,7 +3,7 @@ import logging
 import os
 import json
 from datetime import datetime
-from time import time
+from time import time, sleep
 
 import requests
 from bsread import source, PULL
@@ -71,10 +71,13 @@ def get_data_from_buffer(data_api_request):
     return response.json()
 
 
-def process_requests(stream_address, receive_timeout=None, mode=PULL):
+def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retrieval_delay=None):
 
     if receive_timeout is None:
         receive_timeout = config.DEFAULT_RECEIVE_TIMEOUT
+
+    if data_retrieval_delay is None:
+        data_retrieval_delay = config.DEFAULT_DATA_RETRIEVAL_DELAY
 
     source_host, source_port = stream_address.rsplit(":", maxsplit=1)
 
@@ -104,6 +107,10 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL):
                              data_api_request["range"]["startPulseId"],
                              data_api_request["range"]["endPulseId"])
 
+                _logger.info("Sleeping for %s seconds before calling the data api." % data_retrieval_delay)
+                sleep(data_retrieval_delay)
+                _logger.info("Sleeping finished. Retrieving data.")
+
                 start_time = time()
                 data = get_data_from_buffer(data_api_request)
                 _logger.info("Data retrieval took %s seconds.", time() - start_time)
@@ -118,7 +125,7 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL):
                 _logger.error("Error while trying to write a requested data range.", e)
 
 
-def start_server(stream_address, user_id):
+def start_server(stream_address, user_id, data_retrieval_delay=None):
 
     if user_id != -1:
         _logger.info("Setting bsread writer uid and gid to %s.", user_id)
@@ -128,7 +135,7 @@ def start_server(stream_address, user_id):
     else:
         _logger.info("Not changing process uid and gid.")
 
-    process_requests(stream_address)
+    process_requests(stream_address, data_retrieval_delay=data_retrieval_delay)
 
 
 def run():
@@ -137,6 +144,8 @@ def run():
     parser.add_argument("stream_address", help="Address of the stream to connect to.")
     parser.add_argument("user_id", type=int, help="user_id under which to run the writer process."
                                                   "Use -1 for current user.")
+    parser.add_argument("--data_retrieval_delay", default=config.DEFAULT_DATA_RETRIEVAL_DELAY, type=int,
+                        help="Time to wait before asking the data-api for the data.")
 
     parser.add_argument("--log_level", default="INFO",
                         choices=['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'],
@@ -148,7 +157,8 @@ def run():
     logging.basicConfig(level=arguments.log_level, format='[%(levelname)s] %(message)s')
 
     start_server(stream_address=arguments.stream_address,
-                 user_id=arguments.user_id)
+                 user_id=arguments.user_id,
+                 data_retrieval_delay=arguments.data_retrieval_delay)
 
 
 if __name__ == "__main__":
