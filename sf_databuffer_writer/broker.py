@@ -37,7 +37,7 @@ def start_server(channels, output_port, queue_length, rest_port):
 
 
 def run():
-    parser = argparse.ArgumentParser(description='bsread data buffer broker')
+    parser = argparse.ArgumentParser(description='bsread broker')
 
     parser.add_argument("-c", "--channels_file", help="JSON file with channels to buffer.")
 
