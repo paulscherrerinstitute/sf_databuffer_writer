@@ -17,6 +17,23 @@ Temporary writing solution for bsread data in SwissFEL DAQ system.
 <a id="quick_start"></a>
 ## Quick start
 
+The writing solution is composed by 2 parts:
+
+- Broker (service that waits for DIA to set acquisition parameters, and waits for the H5 writer to send the first 
+and last pulse id.)
+- Writer (receives the writing request from the broker over ZMQ and downloads + writes the data)
+
+### Broker
+Broker runs as a systemd service **/etc/systemd/system/broker.service**. It writes the audit log of all the sent requests in 
+**/var/log/sf\_databuffer\_audit.log** by default. This can be changed with the config.DEFAULT_AUDIT_FILENAME 
+parameter.
+
+The broker is supposed to run all the time. Even if writing from the data_api does not work, it is still useful 
+to have an audit trail of requests you can repeat.
+
+### Writer
+Writer runs as a systemd service **/etc/systemd/system/broker\_writer1.service**.
+
 <a id="build"></a>
 ## Build
 
