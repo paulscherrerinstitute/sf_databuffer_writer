@@ -60,6 +60,10 @@ The writer is supposed to run all the time - you can also have more than 1 write
 Just duplicate the /etc/systemd/system/broker_writer1.service multiple times. The communication between broker 
 and writer is push-pull (round robin), so multiple writers can be used for load balancing.
 
+**NOTE**: You set the user_id under which the writer is running in the /home/writer/start_broker_writer.sh (you need 
+to restart the service for the changes to take effect). The user_id is the second parameter (-1 by default). Please
+note that this is really the user_id and not the username.
+
 <a id="build"></a>
 ## Build
 
@@ -153,7 +157,7 @@ To read and interpret this line with Python:
 import json
 
 # The filename can be replaced with an .err file.
-with open("/var/log/sf_databuffer_audit.log") as audit_trail:
+with open("test_bsread.h5.err") as audit_trail:
     lines = audit_trail.readlines()
     
 for line in lines:
@@ -166,6 +170,12 @@ for line in lines:
     print(writing_request)
 ```
 ### Writing request
+Writing request is a dictionary with 2 values:
+
+- parameters (parameters for the H5 writer)
+- data_api_request (request sent to the data api to get the data back)
+
+This 2 values define all the properties needed to download the data at any time.
 
 ### Writing files from audit trail manually
 Files can be written using the **sf_databuffer_writer.writer.get_data_from_buffer** and 
