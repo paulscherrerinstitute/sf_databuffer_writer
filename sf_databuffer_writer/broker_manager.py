@@ -57,10 +57,10 @@ class BrokerManager(object):
 
     def get_status(self):
 
-        if self.current_start_pulse_id is not None:
-            return "writing"
+        if self.current_start_pulse_id is not None and self.current_parameters is not None:
+            return "receiving"
 
-        return "waiting"
+        return "stopped"
 
     def stop(self):
         _logger.info("Stopping bsread broker session.")
