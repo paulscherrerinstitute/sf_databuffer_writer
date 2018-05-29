@@ -125,7 +125,7 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retri
                 _logger.error("Error while trying to write a requested data range.", e)
 
 
-def start_server(stream_address, user_id, data_retrieval_delay=None):
+def start_server(stream_address, user_id=-1, data_retrieval_delay=None):
 
     if user_id != -1:
         _logger.info("Setting bsread writer uid and gid to %s.", user_id)
