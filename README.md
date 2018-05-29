@@ -13,6 +13,7 @@ Temporary writing solution for bsread data in SwissFEL DAQ system.
 3. [Running the servers](#running_the_servers)
 4. [Web interface](#web_interface)
     1. [REST API](#rest_api)
+5. [Audit Trail](#audit_trail)
 
 <a id="quick_start"></a>
 ## Quick start
@@ -37,12 +38,23 @@ In case of problems with the communication between the broker and the writer, yo
 **--audit\_trail\_only** flag, which will prevent the sending out of requests over ZMQ (the requests will only be written 
 in the config.DEFAULT_AUDIT_FILENAME file).
 
+For more information on how to parse and re-acquire data from audit trail please check the 
+[Audit Trail](#audit_trail) chapter.
+
 ### Writer
 **Entry point**: sf_databuffer_writer/writer.py
 
 Writer runs as a systemd service **/etc/systemd/system/broker\_writer1.service**. If for some reason it cannot 
-write the requested data, it creates a file called **output_file**.err where the writing request is written down 
-(this can be used for later data download).
+write the requested data, it creates a request file called **output_file**.err. This is similar to the audit trail 
+of the broker (it has the same format) and signals that something went wrong and data needs to be downloaded again.
+
+Example:
+
+- output_file = /sf/alvra/data/data1.h5
+- request_file = /sf/alvra/data/data1.h5.err
+
+The .err file will be created only in case of an error. For more information on how to parse and re-acquire data 
+from .err files please check the [Audit Trail](#audit_trail) chapter.
 
 The writer is supposed to run all the time - you can also have more than 1 writer - you need more systemd services.
 Just duplicate the /etc/systemd/system/broker_writer1.service multiple times. The communication between broker 
@@ -125,3 +137,6 @@ In the API description, localhost and port 8888 are assumed. Please change this 
 
 * `PUT localhost:8888/stop_pulse_id/<pulse_id>` - set last pulse_id to write to the output file.
     - Empty response.
+
+<a id="audit_trail"></a>  
+## Audit Trail
