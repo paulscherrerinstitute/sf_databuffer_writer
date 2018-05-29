@@ -11,7 +11,7 @@ from sf_databuffer_writer.rest_api import register_rest_interface
 _logger = logging.getLogger(__name__)
 
 
-def start_server(channels, output_port, queue_length, rest_port):
+def start_server(channels, output_port, queue_length, rest_port, audit_trail_only=False):
     _logger.info("Writing data for channels: %s", channels)
     _logger.debug("Setting queue length to %s.", queue_length)
 
@@ -23,7 +23,8 @@ def start_server(channels, output_port, queue_length, rest_port):
                                          mode=PUSH)
 
     manager = BrokerManager(request_sender=request_sender,
-                            channels=channels)
+                            channels=channels,
+                            audit_trail_only=audit_trail_only)
 
     register_rest_interface(app, manager)
 
@@ -52,6 +53,9 @@ def run():
                         choices=['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'],
                         help="Log level to use.")
 
+    parser.add_argument("--audit_trail_only", action="store_true",
+                        help="Do not send data over ZMQ. Write audit trail only.")
+
     arguments = parser.parse_args()
 
     # Setup the logging level.
@@ -67,7 +71,8 @@ def run():
     start_server(channels=channels,
                  output_port=arguments.output_port,
                  queue_length=arguments.queue_length,
-                 rest_port=arguments.rest_port)
+                 rest_port=arguments.rest_port,
+                 audit_trail_only=arguments.audit_trail_only)
 
 
 if __name__ == "__main__":

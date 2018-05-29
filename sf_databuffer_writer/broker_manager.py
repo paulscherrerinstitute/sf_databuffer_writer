@@ -26,7 +26,7 @@ def audit_write_request(filename, write_request):
 class BrokerManager(object):
     REQUIRED_PARAMETERS = ["general/created", "general/user", "general/process", "general/instrument", "output_file"]
 
-    def __init__(self, request_sender, channels, audit_filename=None):
+    def __init__(self, request_sender, channels, audit_filename=None, audit_trail_only=False):
 
         if audit_filename is None:
             audit_filename = config.DEFAULT_AUDIT_FILENAME
@@ -43,6 +43,9 @@ class BrokerManager(object):
 
         self.statistics = {"n_processed_requests": 0,
                            "process_startup_time": datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)}
+
+        self.audit_trail_only = audit_trail_only
+        _logger.info("Starting broker manager with audit_trail_only=%s." % self.audit_trail_only)
 
     def set_parameters(self, parameters):
 
@@ -113,7 +116,8 @@ class BrokerManager(object):
 
         audit_write_request(self.audit_filename, write_request)
 
-        self.request_sender.send(write_request)
+        if not self.audit_trail_only:
+            self.request_sender.send(write_request)
 
         self.statistics["last_sent_write_request"] = write_request
         self.statistics["last_sent_write_request_time"] = datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)
