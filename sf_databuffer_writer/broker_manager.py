@@ -92,17 +92,18 @@ class BrokerManager(object):
         _logger.info("Set stop_pulse_id=%d" % stop_pulse_id)
 
         data_api_request = {
-            "channels": self.channels,
+            "channels": [{'name': ch} for ch in self.channels],
             "range": {
                 "startPulseId": self.current_start_pulse_id,
                 "endPulseId": stop_pulse_id},
             "response": {
                 "format": "json",
                 "compression": "none"},
-            "mapping": {
-                "incomplete": "fill-null"
-            },
-            "eventFields": ["channel", "pulseId", "value", "shape"],
+            # commented to ensure compatibility with data_api_python client method in writer
+            #"mapping": {
+            #    "incomplete": "fill-null"
+            #},
+            "eventFields": ["channel", "pulseId", "value", "shape", "globalDate"],
             "configFields": ["type", "shape"]
         }
 
