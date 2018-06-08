@@ -2,7 +2,7 @@ import json
 import unittest
 
 from multiprocessing import Process
-from time import sleep
+from time import sleep, time
 
 import os
 
@@ -10,10 +10,12 @@ import h5py
 import requests
 
 from sf_databuffer_writer import config, broker, writer
+from sf_databuffer_writer.writer import audit_failed_write_request
 
 
 class TestWriter(unittest.TestCase):
     TEST_OUTPUT_FILE = "ignore_output.h5"
+    TEST_OUTPUT_FILE_ERROR = TEST_OUTPUT_FILE + ".err"
     TEST_AUDIT_FILE = "ignore_audit.txt"
 
     def setUp(self):
@@ -32,7 +34,7 @@ class TestWriter(unittest.TestCase):
         sleep(1)
 
         def fake_data(_):
-            test_data_file = os.path.join(self.data_folder, "dispathing_layer_sample.json")
+            test_data_file = os.path.join(self.data_folder, "dispatching_layer_sample.json")
             with open(test_data_file, 'r') as input_file:
                 json_data = json.load(input_file)
 
@@ -57,6 +59,11 @@ class TestWriter(unittest.TestCase):
 
         try:
             os.remove(TestWriter.TEST_OUTPUT_FILE)
+        except:
+            pass
+
+        try:
+            os.remove(TestWriter.TEST_OUTPUT_FILE_ERROR)
         except:
             pass
 
@@ -110,3 +117,33 @@ class TestWriter(unittest.TestCase):
         array_dataset = file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/data"]
         self.assertEqual(array_dataset.shape, (36, 1024))
         self.assertEqual(str(array_dataset.dtype), "float32")
+
+    def test_audit_failed_write_request(self):
+        data_api_request = {"something": "wrong"}
+
+        parameters = {"general/created": "test",
+                      "general/user": "tester",
+                      "general/process": "test_process",
+                      "general/instrument": "mac",
+                      "output_file": self.TEST_OUTPUT_FILE}
+
+        timestamp = time()
+
+        audit_failed_write_request(data_api_request, parameters, timestamp)
+
+        with open(self.TEST_OUTPUT_FILE_ERROR) as input_file:
+            json_string = input_file.readlines()[0][18:]
+
+        data = json.loads(json_string)
+
+        err_data_api_request = json.loads(data["data_api_request"])
+        err_parameters = json.loads(data["parameters"])
+        err_timestamp = data["timestamp"]
+
+        self.assertDictEqual(data_api_request, err_data_api_request)
+        self.assertDictEqual(parameters, err_parameters)
+        self.assertEqual(timestamp, err_timestamp)
+
+
+
+
