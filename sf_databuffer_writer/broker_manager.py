@@ -1,4 +1,5 @@
 from datetime import datetime
+from time import time
 
 import logging
 import json
@@ -99,17 +100,14 @@ class BrokerManager(object):
             "response": {
                 "format": "json",
                 "compression": "none"},
-            # commented to ensure compatibility with data_api_python client method in writer
-            #"mapping": {
-            #    "incomplete": "fill-null"
-            #},
             "eventFields": ["channel", "pulseId", "value", "shape", "globalDate"],
             "configFields": ["type", "shape"]
         }
 
         write_request = {
             "data_api_request": json.dumps(data_api_request),
-            "parameters": json.dumps(self.current_parameters)
+            "parameters": json.dumps(self.current_parameters),
+            "timestamp": time()
         }
 
         self.current_start_pulse_id = None

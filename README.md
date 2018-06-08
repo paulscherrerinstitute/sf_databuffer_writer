@@ -169,9 +169,11 @@ for line in lines:
     
     data_api_request = json.loads(writing_request["data_api_request"])
     parameters = json.loads(writing_request["parameters"])
+    timestamp = writing_request["timestamp"]
     
     print(data_api_request)
     print(parameters)
+    print(timestamp)
 ```
 ### Writing request
 Writing request is a dictionary with 2 values:

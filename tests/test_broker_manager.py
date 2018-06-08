@@ -2,6 +2,7 @@ import json
 import unittest
 
 import os
+from time import time
 
 from sf_databuffer_writer.broker_manager import BrokerManager
 
@@ -43,14 +44,11 @@ class TestBrokerManager(unittest.TestCase):
 
         self.assertEqual(data_api_request["range"]["startPulseId"], start_pulse_id)
         self.assertEqual(data_api_request["range"]["endPulseId"], stop_pulse_id)
-        self.assertListEqual(data_api_request["channels"], channels)
+        self.assertListEqual(data_api_request["channels"], [{'name': ch} for ch in channels])
 
         self.assertDictEqual(request_parameters, parameters)
 
-        self.assertEqual(data_api_request["mapping"]["incomplete"], "fill-null",
-                         "fill-null strategy is needed for writer.")
-
-        self.assertListEqual(data_api_request["eventFields"], ["channel", "pulseId", "value", "shape"])
+        self.assertListEqual(data_api_request["eventFields"], ["channel", "pulseId", "value", "shape", "globalDate"])
         self.assertListEqual(data_api_request["configFields"], ["type", "shape"])
 
         start_pulse_id = 1000
@@ -67,11 +65,14 @@ class TestBrokerManager(unittest.TestCase):
 
         data_api_request = json.loads(request_sender.write_request["data_api_request"])
         request_parameters = json.loads(request_sender.write_request["parameters"])
+        request_timestamp = request_sender.write_request["timestamp"]
 
         self.assertEqual(data_api_request["range"]["startPulseId"], start_pulse_id)
         self.assertEqual(data_api_request["range"]["endPulseId"], stop_pulse_id)
 
         self.assertDictEqual(request_parameters, parameters)
+
+        self.assertTrue(time() - request_timestamp < 1)
 
     def test_audit_file(self):
         request_sender = MockRequestSender()
@@ -99,9 +100,12 @@ class TestBrokerManager(unittest.TestCase):
         audit_log = json.loads(lines[0][18:])
         audit_data_api_request = json.loads(audit_log["data_api_request"])
         audit_request_parameters = json.loads(audit_log["parameters"])
+        audit_timestamp = audit_log["timestamp"]
 
         self.assertDictEqual(data_api_request, audit_data_api_request)
         self.assertDictEqual(request_parameters, audit_request_parameters)
+
+        self.assertTrue(time()-audit_timestamp < 1)
 
     def test_manager_status(self):
         request_sender = MockRequestSender()
