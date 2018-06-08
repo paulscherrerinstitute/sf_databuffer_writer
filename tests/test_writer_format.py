@@ -30,16 +30,15 @@ class TestWriter(unittest.TestCase):
                       "output_file": self.TEST_OUTPUT_FILE}
 
         # Request used to retrieve the the sample data.
-        # {'channels': ['SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED',
-        #               'SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX',
-        #               'SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN'],
+        # {'channels': [{'name': 'SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED'},
+        #               {'name': 'SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX'},
+        #               {'name': 'SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN'}],
         #  'configFields': ['type', 'shape'],
-        #  'eventFields': ['channel', 'pulseId', 'value', 'shape'],
-        #  'mapping': {'incomplete': 'fill-null'},
+        #  'eventFields': ['channel', 'pulseId', 'value', 'shape', 'globalDate'],
         #  'range': {'endPulseId': 5633494120, 'startPulseId': 5633493420},
         #  'response': {'compression': 'none', 'format': 'json'}}
 
-        test_data_file = os.path.join(self.data_folder, "dispathing_layer_sample.json")
+        test_data_file = os.path.join(self.data_folder, "dispatching_layer_sample.json")
         with open(test_data_file, 'r') as input_file:
             json_data = json.load(input_file)
 
