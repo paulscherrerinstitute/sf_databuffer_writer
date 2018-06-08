@@ -8,9 +8,11 @@ import os
 
 import h5py
 import requests
+from bsread.handlers.compact import Message, Value
+from mflow import mflow
 
 from sf_databuffer_writer import config, broker, writer
-from sf_databuffer_writer.writer import audit_failed_write_request
+from sf_databuffer_writer.writer import audit_failed_write_request, process_message
 
 
 class TestWriter(unittest.TestCase):
@@ -146,6 +148,36 @@ class TestWriter(unittest.TestCase):
         self.assertDictEqual(parameters, err_parameters)
         self.assertEqual(timestamp, err_timestamp)
 
+    def test_adjusted_retrieval_delay(self):
 
+        parameters = {"general/created": "test",
+                      "general/user": "tester",
+                      "general/process": "test_process",
+                      "general/instrument": "mac",
+                      "output_file": self.TEST_OUTPUT_FILE}
 
+        data_api_request = {'channels': [{'name': 'SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED'},
+                                         {'name': 'SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX'},
+                                         {'name': 'SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN'}],
+                            'configFields': ['type', 'shape'],
+                            'eventFields': ['channel', 'pulseId', 'value', 'shape', 'globalDate'],
+                            'range': {'endPulseId': 5721143416, 'startPulseId': 5721143344},
+                            'response': {'compression': 'none', 'format': 'json'}}
 
+        # Simulate as if the request was generated 9 seconds ago.
+        timestamp = time() - 9
+
+        message = Message()
+        message.data = {"parameters": Value(json.dumps(parameters)),
+                        "data_api_request": Value(json.dumps(data_api_request)),
+                        "timestamp": Value(timestamp)}
+
+        mflow_message = mflow.Message(None, message)
+
+        start_time = time()
+        process_message(mflow_message, data_retrieval_delay=10)
+        time_delta = time() - start_time
+
+        # The call should last less than 3 second: 10 seconds delay, but request was generated 9 seconds ago.
+        # Account some time for file writing.
+        self.assertLess(time_delta, 3)
