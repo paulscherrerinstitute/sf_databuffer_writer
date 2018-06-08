@@ -6,7 +6,6 @@ import os
 import h5py
 
 from sf_databuffer_writer.writer import write_data_to_file
-from sf_databuffer_writer.writer_format import DataBufferH5Writer
 
 
 class TestWriter(unittest.TestCase):

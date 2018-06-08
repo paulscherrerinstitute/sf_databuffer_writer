@@ -26,13 +26,14 @@ def create_folders(output_file):
         _logger.info("Folder '%s' already exists.", filename_folder)
 
 
-def audit_failed_write_request(data_api_request, parameters):
+def audit_failed_write_request(data_api_request, parameters, timestamp):
 
     filename = None
 
     write_request = {
         "data_api_request": json.dumps(data_api_request),
-        "parameters": json.dumps(parameters)
+        "parameters": json.dumps(parameters),
+        "timestamp": timestamp
     }
 
     try:
@@ -99,6 +100,7 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retri
 
             data_api_request = None
             parameters = None
+            request_timestamp = None
 
             try:
                 message = input_stream.receive()
@@ -138,7 +140,7 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retri
                 _logger.info("Data writing took %s seconds." % (time() - start_time))
 
             except Exception as e:
-                audit_failed_write_request(data_api_request, parameters)
+                audit_failed_write_request(data_api_request, parameters, request_timestamp)
 
                 _logger.error("Error while trying to write a requested data range.", e)
 
