@@ -29,46 +29,39 @@ class TestWriter(unittest.TestCase):
                       "general/instrument": "mac",
                       "output_file": self.TEST_OUTPUT_FILE}
 
-        # Request used to retrieve the the sample data.
-        # {'channels': [{'name': 'SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED'},
-        #               {'name': 'SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX'},
-        #               {'name': 'SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN'}],
-        #  'configFields': ['type', 'shape'],
-        #  'eventFields': ['channel', 'pulseId', 'value', 'shape', 'globalDate'],
-        #  'range': {'endPulseId': 5633494120, 'startPulseId': 5633493420},
-        #  'response': {'compression': 'none', 'format': 'json'}}
-
         test_data_file = os.path.join(self.data_folder, "dispatching_layer_sample.json")
         with open(test_data_file, 'r') as input_file:
             json_data = json.load(input_file)
+
+        n_pulses = len(json_data[0]["data"])
 
         write_data_to_file(parameters, json_data)
 
         file = h5py.File(TestWriter.TEST_OUTPUT_FILE)
 
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/pulse_id"]), 36)
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/is_data_present"]), 36)
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/data"]), 36)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/pulse_id"]), n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/is_data_present"]), n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/data"]), n_pulses)
 
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/pulse_id"]), 36)
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/is_data_present"]), 36)
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/data"]), 36)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/pulse_id"]), n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/is_data_present"]), n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/data"]), n_pulses)
 
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/pulse_id"]), 36)
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/is_data_present"]), 36)
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/data"]), 36)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/pulse_id"]), n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/is_data_present"]), n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/data"]), n_pulses)
 
         scalar_dataset = file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/data"]
-        self.assertEqual(scalar_dataset.shape, (36, 1))
+        self.assertEqual(scalar_dataset.shape, (n_pulses, 1))
         self.assertEqual(str(scalar_dataset.dtype), "float32")
 
         array_dataset = file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/data"]
-        self.assertEqual(array_dataset.shape, (36, 1024))
+        self.assertEqual(array_dataset.shape, (n_pulses, 1024))
         self.assertEqual(str(array_dataset.dtype), "float32")
 
         pulse_id_start = file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/pulse_id"][0]
         pulse_id_stop = file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/pulse_id"][-1]
 
         # Pulse ids taken from the dispatching layer request above.
-        self.assertTrue(5633493420 <= pulse_id_start)
-        self.assertTrue(5633494120 >= pulse_id_stop)
+        self.assertTrue(5721143344 <= pulse_id_start)
+        self.assertTrue(5721143416 >= pulse_id_stop)

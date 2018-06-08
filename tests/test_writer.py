@@ -40,6 +40,8 @@ class TestWriter(unittest.TestCase):
 
             return json_data
 
+        self.n_pulses = len(fake_data("whatever")[0]["data"])
+
         def writer_start_server():
             writer.get_data_from_buffer = fake_data
             writer.start_server("tcp://localhost:%d" % self.stream_output_port)
@@ -98,24 +100,24 @@ class TestWriter(unittest.TestCase):
 
         file = h5py.File(TestWriter.TEST_OUTPUT_FILE)
 
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/pulse_id"]), 36)
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/is_data_present"]), 36)
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/data"]), 36)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/is_data_present"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/data"]), self.n_pulses)
 
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/pulse_id"]), 36)
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/is_data_present"]), 36)
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/data"]), 36)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/is_data_present"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/data"]), self.n_pulses)
 
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/pulse_id"]), 36)
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/is_data_present"]), 36)
-        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/data"]), 36)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/is_data_present"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/data"]), self.n_pulses)
 
         scalar_dataset = file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/data"]
-        self.assertEqual(scalar_dataset.shape, (36, 1))
+        self.assertEqual(scalar_dataset.shape, (self.n_pulses, 1))
         self.assertEqual(str(scalar_dataset.dtype), "float32")
 
         array_dataset = file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/data"]
-        self.assertEqual(array_dataset.shape, (36, 1024))
+        self.assertEqual(array_dataset.shape, (self.n_pulses, 1024))
         self.assertEqual(str(array_dataset.dtype), "float32")
 
     def test_audit_failed_write_request(self):
