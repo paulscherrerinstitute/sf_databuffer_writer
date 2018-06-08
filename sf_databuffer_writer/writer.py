@@ -116,7 +116,7 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retri
                              data_api_request["range"]["startPulseId"],
                              data_api_request["range"]["endPulseId"]))
 
-                request_timestamp = message.data.data["timestamp"]
+                request_timestamp = message.data.data["timestamp"].value
                 current_timestamp = time()
                 # sleep time = target sleep time - time that has already passed.
                 adjusted_retrieval_delay = data_retrieval_delay - (current_timestamp - request_timestamp)
