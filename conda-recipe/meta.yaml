@@ -17,6 +17,7 @@ requirements:
         - bsread >=1.1.0
         - bottle
         - requests
+        - data_api
 
 build:
   entry_points:

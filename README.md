@@ -98,6 +98,7 @@ The library relies on the following packages:
 - bsread >=1.1.0
 - bottle
 - requests
+- data_api
 
 In case you are using conda to install the packages, you might need to add the **paulscherrerinstitute** channel to
 your conda config:
