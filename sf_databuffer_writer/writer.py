@@ -78,6 +78,50 @@ def get_data_from_buffer(data_api_request):
     return response.json()
 
 
+def process_message(message, data_retrieval_delay):
+
+    data_api_request = None
+    parameters = None
+    request_timestamp = None
+
+    try:
+        data_api_request = json.loads(message.data.data["data_api_request"].value)
+        parameters = json.loads(message.data.data["parameters"].value)
+
+        _logger.info("Received request to write file %s from startPulseId=%s to endPulseId=%s" % (
+            parameters["output_file"],
+            data_api_request["range"]["startPulseId"],
+            data_api_request["range"]["endPulseId"]))
+
+        request_timestamp = message.data.data["timestamp"].value
+        current_timestamp = time()
+        # sleep time = target sleep time - time that has already passed.
+        adjusted_retrieval_delay = data_retrieval_delay - (current_timestamp - request_timestamp)
+
+        if adjusted_retrieval_delay < 0:
+            adjusted_retrieval_delay = 0
+
+        _logger.info("Request timestamp=%s, current_timestamp=%s, adjusted_retrieval_delay=%s." %
+                     (request_timestamp, current_timestamp, adjusted_retrieval_delay))
+
+        _logger.info("Sleeping for %s seconds before calling the data api." % adjusted_retrieval_delay)
+        sleep(adjusted_retrieval_delay)
+        _logger.info("Sleeping finished. Retrieving data.")
+
+        start_time = time()
+        data = get_data_from_buffer(data_api_request)
+        _logger.info("Data retrieval took %s seconds." % (time() - start_time))
+
+        start_time = time()
+        write_data_to_file(parameters, data)
+        _logger.info("Data writing took %s seconds." % (time() - start_time))
+
+    except Exception as e:
+        audit_failed_write_request(data_api_request, parameters, request_timestamp)
+
+        _logger.error("Error while trying to write a requested data range.", e)
+
+
 def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retrieval_delay=None):
 
     if receive_timeout is None:
@@ -97,52 +141,12 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retri
     with source(host=source_host, port=source_port, mode=mode, receive_timeout=receive_timeout) as input_stream:
 
         while True:
-
-            data_api_request = None
-            parameters = None
-            request_timestamp = None
-
-            try:
                 message = input_stream.receive()
 
                 if message is None:
                     continue
 
-                data_api_request = json.loads(message.data.data["data_api_request"].value)
-                parameters = json.loads(message.data.data["parameters"].value)
-
-                _logger.info("Received request to write file %s from startPulseId=%s to endPulseId=%s" % (
-                             parameters["output_file"],
-                             data_api_request["range"]["startPulseId"],
-                             data_api_request["range"]["endPulseId"]))
-
-                request_timestamp = message.data.data["timestamp"].value
-                current_timestamp = time()
-                # sleep time = target sleep time - time that has already passed.
-                adjusted_retrieval_delay = data_retrieval_delay - (current_timestamp - request_timestamp)
-
-                if adjusted_retrieval_delay < 0:
-                    adjusted_retrieval_delay = 0
-
-                _logger.info("Request timestamp=%s, current_timestamp=%s, adjusted_retrieval_delay=%s." %
-                             (request_timestamp, current_timestamp, adjusted_retrieval_delay))
-
-                _logger.info("Sleeping for %s seconds before calling the data api." % adjusted_retrieval_delay)
-                sleep(adjusted_retrieval_delay)
-                _logger.info("Sleeping finished. Retrieving data.")
-
-                start_time = time()
-                data = get_data_from_buffer(data_api_request)
-                _logger.info("Data retrieval took %s seconds." % (time() - start_time))
-
-                start_time = time()
-                write_data_to_file(parameters, data)
-                _logger.info("Data writing took %s seconds." % (time() - start_time))
-
-            except Exception as e:
-                audit_failed_write_request(data_api_request, parameters, request_timestamp)
-
-                _logger.error("Error while trying to write a requested data range.", e)
+                process_message(message, data_retrieval_delay)
 
 
 def start_server(stream_address, user_id=-1, data_retrieval_delay=None):
