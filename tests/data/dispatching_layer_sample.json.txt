@@ -5,5 +5,5 @@
   {'name': 'SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN'}],
  'configFields': ['type', 'shape'],
  'eventFields': ['channel', 'pulseId', 'value', 'shape', 'globalDate'],
- 'range': {'endPulseId': 5633494120, 'startPulseId': 5633493420},
+ 'range': {'endPulseId': 5721143416, 'startPulseId': 5721143344},
  'response': {'compression': 'none', 'format': 'json'}}
