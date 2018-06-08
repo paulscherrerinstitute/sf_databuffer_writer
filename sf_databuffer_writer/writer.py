@@ -114,8 +114,19 @@ def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retri
                              data_api_request["range"]["startPulseId"],
                              data_api_request["range"]["endPulseId"]))
 
-                _logger.info("Sleeping for %s seconds before calling the data api." % data_retrieval_delay)
-                sleep(data_retrieval_delay)
+                request_timestamp = message.data.data["timestamp"]
+                current_timestamp = time()
+                # sleep time = target sleep time - time that has already passed.
+                adjusted_retrieval_delay = data_retrieval_delay - (current_timestamp - request_timestamp)
+
+                if adjusted_retrieval_delay < 0:
+                    adjusted_retrieval_delay = 0
+
+                _logger.info("Request timestamp=%s, current_timestamp=%s, adjusted_retrieval_delay=%s." %
+                             (request_timestamp, current_timestamp, adjusted_retrieval_delay))
+
+                _logger.info("Sleeping for %s seconds before calling the data api." % adjusted_retrieval_delay)
+                sleep(adjusted_retrieval_delay)
                 _logger.info("Sleeping finished. Retrieving data.")
 
                 start_time = time()
