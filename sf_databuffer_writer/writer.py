@@ -88,10 +88,14 @@ def process_message(message, data_retrieval_delay):
         data_api_request = json.loads(message.data.data["data_api_request"].value)
         parameters = json.loads(message.data.data["parameters"].value)
 
+        output_file = parameters["output_file"]
         _logger.info("Received request to write file %s from startPulseId=%s to endPulseId=%s" % (
-            parameters["output_file"],
+            output_file,
             data_api_request["range"]["startPulseId"],
             data_api_request["range"]["endPulseId"]))
+
+        if output_file == "/dev/null":
+            _logger.info("Output file set to /dev/null. Skipping request.")
 
         request_timestamp = message.data.data["timestamp"].value
         current_timestamp = time()
