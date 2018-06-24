@@ -129,34 +129,29 @@ class DataBufferH5Writer(object):
         _logger.info("Started writing data to disk.")
 
         df = self._build_pandas_data_frame(json_data, index_field="globalDate")
+
+        pulse_ids = df["pulseId"].values
+        n_pulse_ids = len(pulse_ids)
+
         for ch in df.columns:
             if ch in ["pulseId", 'globalSeconds', 'globalDate', 'eventCount', 'globalNanoseconds']:
                 continue
-            #_logger.info("/data/" + ch + "/pulse_id")
-            self.h5_writer.file["/data/" + ch + "/pulse_id"] = df["pulseId"].values
-            #_logger.info("/data/" + ch + "/data")
-            
-            #self.h5_writer.file["/data/" + ch + "/data"] = df[ch].values
-            self.h5_writer.file["/data/" + ch].create_dataset("data", 
-                                                              shape=[df["pulseId"].count(), ] + datasets_meta[ch]["shape"], 
+
+            self.h5_writer.file["/data/" + ch + "/pulse_id"] = pulse_ids
+
+            self.h5_writer.file["/data/" + ch].create_dataset("data",
+                                                              shape=[n_pulse_ids, ] + datasets_meta[ch]["shape"],
                                                               dtype=datasets_meta[ch]["type"])
+
+            null_values = df[ch].notnull().values
+            self.h5_writer.file["/data/" + ch + "/is_data_present"] = null_values
+
+            channel_data = df[ch]
             for i,d in enumerate(df[ch]):
-                if df[ch].notnull().values[i]:
-                    self.h5_writer.file["/data/" + ch + "/data"][i] = df[ch].iloc[i]
-            #_logger.info("/data/" + ch + "/is_data_present")
-            self.h5_writer.file["/data/" + ch + "/is_data_present"] = df[ch].notnull().values
-        #for pulse_data in json_data["data"]:
-        #
-        #    pulse_ids = [x["pulseId"] for x in pulse_data]
-        #    self.h5_writer.write(pulse_ids, dataset_group_name='pulse_id')
-        #
-        #    is_data_valid = [1 if data_point is not None else 0 for data_point in pulse_ids]
-        #    self.h5_writer.write(is_data_valid, dataset_group_name='is_data_present')
-        #
-        #    values = [x["value"] for x in pulse_data]
-        #    self.h5_writer.write(values, dataset_group_name='data')
-        
-        
+                if null_values[i]:
+                    self.h5_writer.file["/data/" + ch + "/data"][i] = channel_data.iloc[i]
+
+
 
     def _prepare_format_datasets(self):
 
