@@ -14,7 +14,7 @@ requirements:
 
     run:
         - python
-        - bsread >=1.1.0
+        - bsread >=1.4.0
         - bottle
         - requests
         - data_api
