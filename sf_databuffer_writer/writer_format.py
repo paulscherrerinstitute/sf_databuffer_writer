@@ -79,8 +79,8 @@ class DataBufferH5Writer(object):
                     "is_data_present": dataset_value_present
                 }
 
-            except Exception as e:
-                _logger.warning("Cannot convert channel_name %s. Check if this channel is in data buffer at all." % name)
+            except:
+                _logger.warning("Cannot convert channel_name %s. Is the channel is the data buffer?" % name)
 
         return pulse_ids, datasets_data
 
