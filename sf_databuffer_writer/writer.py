@@ -96,6 +96,7 @@ def process_message(message, data_retrieval_delay):
 
         if output_file == "/dev/null":
             _logger.info("Output file set to /dev/null. Skipping request.")
+            return
 
         request_timestamp = message.data.data["timestamp"].value
         current_timestamp = time()
