@@ -47,31 +47,40 @@ class DataBufferH5Writer(object):
         pulse_id_to_data_index = {data: index for index, data in enumerate(pulse_ids)}
         n_data_points = len(pulse_id_to_data_index)
 
+        _logger.info("Built array of pulse_ids. n_data_points=%d" % n_data_points)
+
         datasets_data = {}
 
         for channel_data in json_data:
             name = channel_data["channel"]["name"]
             data = channel_data["data"]
 
-            channel_type = channel_data["configs"][0]["type"]
-            channel_shape = channel_data["configs"][0]["shape"]
+            _logger.debug("Formatting data for channel %s." % name)
 
-            dataset_type, dataset_shape = self._get_dataset_definition(channel_type, channel_shape, n_data_points)
+            try:
 
-            dataset_values = numpy.zeros(dtype=dataset_type, shape=dataset_shape)
-            dataset_value_present = numpy.zeros(shape=(n_data_points,), dtype="bool")
+                channel_type = channel_data["configs"][0]["type"]
+                channel_shape = channel_data["configs"][0]["shape"]
 
-            if data:
-                for data_point in data:
-                    data_index = pulse_id_to_data_index[data_point["pulseId"]]
+                dataset_type, dataset_shape = self._get_dataset_definition(channel_type, channel_shape, n_data_points)
 
-                    dataset_values[data_index] = data_point["value"]
-                    dataset_value_present[data_index] = 1
+                dataset_values = numpy.zeros(dtype=dataset_type, shape=dataset_shape)
+                dataset_value_present = numpy.zeros(shape=(n_data_points,), dtype="bool")
 
-            datasets_data[name] = {
-                "data": dataset_values,
-                "is_data_present": dataset_value_present
-            }
+                if data:
+                    for data_point in data:
+                        data_index = pulse_id_to_data_index[data_point["pulseId"]]
+
+                        dataset_values[data_index] = data_point["value"]
+                        dataset_value_present[data_index] = 1
+
+                datasets_data[name] = {
+                    "data": dataset_values,
+                    "is_data_present": dataset_value_present
+                }
+
+            except Exception as e:
+                _logger.warning("Cannot convert channel_name %s. Check if this channel is in data buffer at all." % name)
 
         return pulse_ids, datasets_data
 
@@ -90,9 +99,11 @@ class DataBufferH5Writer(object):
 
         self._prepare_format_datasets()
 
-        _logger.info("Started writing data to disk.")
+        _logger.info("Building numpy arrays with received data.")
 
         pulse_ids, datasets_data = self._build_datasets_data(json_data)
+
+        _logger.info("Writing data to disk.")
 
         for name, data in datasets_data.items():
             self.file["/data/" + name + "/pulse_id"] = pulse_ids
