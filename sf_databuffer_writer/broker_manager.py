@@ -40,6 +40,8 @@ class BrokerManager(object):
         self.current_parameters = None
         self.current_start_pulse_id = None
 
+        self.last_stop_pulse_id = None
+
         self.request_sender = request_sender
 
         self.statistics = {"n_processed_requests": 0,
@@ -80,6 +82,11 @@ class BrokerManager(object):
     def start_writer(self, start_pulse_id):
 
         if self.current_start_pulse_id is not None:
+
+            # You can post the same start pulse id multiple times.
+            if self.current_start_pulse_id == start_pulse_id:
+                return
+
             _logger.warning("Previous acquisition was still running. The previous run will not be processed.")
 
             _logger.warning({"current_parameters": self.current_parameters,
@@ -90,6 +97,15 @@ class BrokerManager(object):
         self.current_start_pulse_id = start_pulse_id
 
     def stop_writer(self, stop_pulse_id):
+
+        if self.current_start_pulse_id is None:
+            # We allow multiple stop requests with the same pulse id.
+            if self.last_stop_pulse_id == stop_pulse_id:
+                return
+
+            _logger.warning("No acquisition started. Ignoring stop_pulse_id %s request." % stop_pulse_id)
+            return
+
         _logger.info("Set stop_pulse_id=%d" % stop_pulse_id)
 
         data_api_request = {
@@ -112,6 +128,7 @@ class BrokerManager(object):
 
         self.current_start_pulse_id = None
         self.current_parameters = None
+        self.last_stop_pulse_id = stop_pulse_id
 
         audit_write_request(self.audit_filename, write_request)
 
