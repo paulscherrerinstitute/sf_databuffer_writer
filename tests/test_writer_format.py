@@ -65,3 +65,23 @@ class TestWriter(unittest.TestCase):
         # Pulse ids taken from the dispatching layer request above.
         self.assertTrue(5721143344 <= pulse_id_start)
         self.assertTrue(5721143416 >= pulse_id_stop)
+
+    def test_write_camera_data(self):
+        parameters = {"general/created": "test",
+                      "general/user": "tester",
+                      "general/process": "test_process",
+                      "general/instrument": "mac",
+                      "output_file": self.TEST_OUTPUT_FILE}
+
+        test_data_file = os.path.join(self.data_folder, "camera_image_sample.json")
+        with open(test_data_file, 'r') as input_file:
+            json_data = json.load(input_file)
+
+        n_pulses = len(json_data[0]["data"])
+
+        write_data_to_file(parameters, json_data)
+
+        file = h5py.File(TestWriter.TEST_OUTPUT_FILE)
+
+        self.assertEqual(len(file["data/SARES20-PROF142-M1:FPICTURE/data"]), n_pulses)
+        self.assertEqual(file["data/SARES20-PROF142-M1:FPICTURE/data"].shape, tuple([n_pulses] + [659, 494][::-1]))

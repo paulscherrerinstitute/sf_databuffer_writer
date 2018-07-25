@@ -71,6 +71,11 @@ class DataBufferH5Writer(object):
                     for data_point in data:
                         data_index = pulse_id_to_data_index[data_point["pulseId"]]
 
+                        if len(channel_shape) > 1:
+                            # Bsread is [X, Y] but numpy is [Y, X].
+                            data_point["value"] = numpy.array(data_point["value"], dtype=dataset_type).\
+                                reshape(channel_shape[::-1])
+
                         dataset_values[data_index] = data_point["value"]
                         dataset_value_present[data_index] = 1
 
