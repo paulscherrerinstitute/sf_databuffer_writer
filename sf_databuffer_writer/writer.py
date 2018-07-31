@@ -9,6 +9,8 @@ import requests
 from bsread import source, PULL
 
 from sf_databuffer_writer import config
+from sf_databuffer_writer.utils import get_timestamp_range_from_api_request, \
+    filter_unwanted_pulse_ids
 from sf_databuffer_writer.writer_format import DataBufferH5Writer
 
 _logger = logging.getLogger(__name__)
@@ -64,16 +66,36 @@ def write_data_to_file(parameters, json_data):
     writer.close()
 
 
-def get_data_from_buffer(data_api_request):
+def get_data_from_buffer(data_api_request, request_timestamp=None):
 
-    _logger.info("Loading data from from startPulseId=%s to endPulseId=%s.",
-                 data_api_request["range"]["startPulseId"], data_api_request["range"]["endPulseId"])
+    _logger.info("Loading data for range: %s" % data_api_request["range"])
 
     _logger.debug("Data API request: %s", data_api_request)
     response = requests.post(url=config.DATA_API_QUERY_ADDRESS, json=data_api_request)
 
+    # TODO: Remove this. This is a temporary fix because the data-api has a pulse_id range request bug.
     if not response.ok:
-        raise RuntimeError("Error while trying to get data from the dispatching layer.", response.text)
+
+        start_date, end_date = get_timestamp_range_from_api_request(data_api_request, request_timestamp)
+
+        data_api_request["range"]["startDate"] = start_date
+        data_api_request["range"]["endDate"] = end_date
+
+        start_pulse_id = data_api_request["range"]["startPulseId"]
+        stop_pulse_id = data_api_request["range"]["endPulseId"]
+
+        del data_api_request["range"]["startPulseId"]
+        del data_api_request["range"]["endPulseId"]
+
+        response = requests.post(url=config.DATA_API_QUERY_ADDRESS, json=data_api_request)
+
+        if not response.ok:
+            raise RuntimeError("Error while trying to get data from the dispatching layer.", response.text)
+
+        data = response.json()
+        filter_unwanted_pulse_ids(data, start_pulse_id, stop_pulse_id)
+
+        return data
 
     return response.json()
 
@@ -114,7 +136,7 @@ def process_message(message, data_retrieval_delay):
         _logger.info("Sleeping finished. Retrieving data.")
 
         start_time = time()
-        data = get_data_from_buffer(data_api_request)
+        data = get_data_from_buffer(data_api_request, request_timestamp)
         _logger.info("Data retrieval took %s seconds." % (time() - start_time))
 
         start_time = time()
