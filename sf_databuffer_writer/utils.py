@@ -31,7 +31,7 @@ def filter_unwanted_pulse_ids(data, start_pulse_id, stop_pulse_id):
     try:
 
         def get_index_from_pulse_id(name, data, target_pulse_id, direction=1):
-            for index, pulse_id in (i, d["pulseId"] for i, d in enumerate(data[::direction])):
+            for index, pulse_id in ((i, d["pulseId"]) for i, d in enumerate(data[::direction])):
                 if direction == 1 and pulse_id >= target_pulse_id:
                     return index
                 elif direction == -1 and pulse_id <= target_pulse_id:
