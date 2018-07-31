@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from logging import getLogger
 from time import time
 
-_logger = getLogger(time())
+_logger = getLogger(__name__)
 
 
 def get_timestamp_range_from_api_request(data_api_request, request_timestamp):
