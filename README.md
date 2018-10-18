@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/paulscherrerinstitute/sf_bsread_writer.svg?branch=master)](https://travis-ci.org/paulscherrerinstitute/sf_bsread_writer/)
+[![Build Status](https://travis-ci.org/paulscherrerinstitute/sf_databuffer_writer.svg?branch=master)](https://travis-ci.org/paulscherrerinstitute/sf_databuffer_writer/)
 
 # SwissFEL DataBuffer Writer
 Temporary writing solution for bsread data in SwissFEL DAQ system.
