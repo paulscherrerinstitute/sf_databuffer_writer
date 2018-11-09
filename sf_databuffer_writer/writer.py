@@ -71,10 +71,14 @@ def get_data_from_buffer(data_api_request, request_timestamp=None):
     _logger.info("Loading data for range: %s" % data_api_request["range"])
 
     _logger.debug("Data API request: %s", data_api_request)
-    response = requests.post(url=config.DATA_API_QUERY_ADDRESS, json=data_api_request)
 
+    if request_timestamp == None:
+        response = requests.post(url=config.DATA_API_QUERY_ADDRESS, json=data_api_request)
+
+        return response.json()
+
+    else:
     # TODO: Remove this. This is a temporary fix because the data-api has a pulse_id range request bug.
-    if not response.ok:
 
         start_date, end_date = get_timestamp_range_from_api_request(data_api_request, request_timestamp)
 
@@ -96,8 +100,6 @@ def get_data_from_buffer(data_api_request, request_timestamp=None):
         filter_unwanted_pulse_ids(data, start_pulse_id, stop_pulse_id)
 
         return data
-
-    return response.json()
 
 
 def process_message(message, data_retrieval_delay):
