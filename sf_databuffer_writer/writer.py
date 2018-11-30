@@ -52,8 +52,9 @@ def audit_failed_write_request(data_api_request, parameters, timestamp):
 
 def write_data_to_file(parameters, json_data):
     output_file = parameters["output_file"]
+    output_file_format = parameters.get("output_file_format", "extended")
 
-    _logger.info("Writing data to output_file: %s", output_file)
+    _logger.info("Writing data to output_file %s with output_file_format", output_file, output_file_format)
 
     if not json_data:
         raise ValueError("Received data from data_api is empty. json_data=%s" % json_data)
@@ -61,13 +62,10 @@ def write_data_to_file(parameters, json_data):
     if not parameters:
         raise ValueError("Received parameters from broker are empty. parameters=%s" % parameters)
 
-    if parameters.get("format") == "compact":
+    if output_file_format == "compact":
         writer = CompactDataBufferH5Writer(output_file, parameters)
-        _logger.info("Using compact format.")
-
     else:
         writer = DataBufferH5Writer(output_file, parameters)
-        _logger.info("Using extended format.")
 
     writer.write_data(json_data)
     writer.close()

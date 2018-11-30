@@ -142,7 +142,7 @@ class CompactDataBufferH5Writer(DataBufferH5Writer):
 
                 dataset_values = numpy.zeros(dtype=dataset_type, shape=dataset_shape)
                 dataset_value_present = numpy.zeros(shape=(n_data_points,), dtype="bool")
-                dataset_pulse_ids = numpy.zeros(shape=(n_data_points,), dtype="bool")
+                dataset_pulse_ids = numpy.zeros(shape=(n_data_points,), dtype="<i8")
 
                 if data:
                     for data_index, data_point in enumerate(data):
@@ -162,8 +162,9 @@ class CompactDataBufferH5Writer(DataBufferH5Writer):
                     "pulse_id": dataset_pulse_ids
                 }
 
-            except:
+            except Exception as e:
                 _logger.warning("Cannot convert channel_name %s. Is the channel is the data buffer?" % name)
+                _logger.error("Channel %s conversion error: %s" % (name, e))
 
         return datasets_data
 
