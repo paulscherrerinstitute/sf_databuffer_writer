@@ -117,3 +117,67 @@ class DataBufferH5Writer(object):
 
     def close(self):
         self.file.close()
+
+
+class CompactDataBufferH5Writer(DataBufferH5Writer):
+
+    def _build_datasets_data(self, json_data):
+
+        datasets_data = {}
+
+        for channel_data in json_data:
+            name = channel_data["channel"]["name"]
+            data = channel_data["data"]
+
+            _logger.debug("Formatting data for channel %s." % name)
+
+            try:
+
+                channel_type = channel_data["configs"][0]["type"]
+                channel_shape = channel_data["configs"][0]["shape"]
+
+                n_data_points = len(data) if data else 0
+
+                dataset_type, dataset_shape = self._get_dataset_definition(channel_type, channel_shape, n_data_points)
+
+                dataset_values = numpy.zeros(dtype=dataset_type, shape=dataset_shape)
+                dataset_value_present = numpy.zeros(shape=(n_data_points,), dtype="bool")
+                dataset_pulse_ids = numpy.zeros(shape=(n_data_points,), dtype="bool")
+
+                if data:
+                    for data_index, data_point in enumerate(data):
+
+                        if len(channel_shape) > 1:
+                            # Bsread is [X, Y] but numpy is [Y, X].
+                            data_point["value"] = numpy.array(data_point["value"], dtype=dataset_type).\
+                                reshape(channel_shape[::-1])
+
+                        dataset_values[data_index] = data_point["value"]
+                        dataset_value_present[data_index] = 1
+                        dataset_pulse_ids[data_index] = data_point["pulseId"]
+
+                datasets_data[name] = {
+                    "data": dataset_values,
+                    "is_data_present": dataset_value_present,
+                    "pulse_id": dataset_pulse_ids
+                }
+
+            except:
+                _logger.warning("Cannot convert channel_name %s. Is the channel is the data buffer?" % name)
+
+        return datasets_data
+
+    def write_data(self, json_data):
+
+        self._prepare_format_datasets()
+
+        _logger.info("Building numpy arrays with received data.")
+
+        datasets_data = self._build_datasets_data(json_data)
+
+        _logger.info("Writing data to disk.")
+
+        for name, data in datasets_data.items():
+            self.file["/data/" + name + "/pulse_id"] = data["pulse_id"]
+            self.file["/data/" + name + "/data"] = data["data"]
+            self.file["/data/" + name + "/is_data_present"] = data["is_data_present"]

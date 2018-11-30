@@ -11,7 +11,7 @@ from bsread import source, PULL
 from sf_databuffer_writer import config
 from sf_databuffer_writer.utils import get_timestamp_range_from_api_request, \
     filter_unwanted_pulse_ids
-from sf_databuffer_writer.writer_format import DataBufferH5Writer
+from sf_databuffer_writer.writer_format import DataBufferH5Writer, CompactDataBufferH5Writer
 
 _logger = logging.getLogger(__name__)
 
@@ -61,7 +61,14 @@ def write_data_to_file(parameters, json_data):
     if not parameters:
         raise ValueError("Received parameters from broker are empty. parameters=%s" % parameters)
 
-    writer = DataBufferH5Writer(output_file, parameters)
+    if parameters.get("format") == "compact":
+        writer = CompactDataBufferH5Writer(output_file, parameters)
+        _logger.info("Using compact format.")
+
+    else:
+        writer = DataBufferH5Writer(output_file, parameters)
+        _logger.info("Using extended format.")
+
     writer.write_data(json_data)
     writer.close()
 
