@@ -35,7 +35,7 @@ class TestWriter(unittest.TestCase):
         self.broker_process.start()
         sleep(1)
 
-        def fake_data(_):
+        def fake_data(_, _2=None):
             test_data_file = os.path.join(self.data_folder, "dispatching_layer_sample.json")
             with open(test_data_file, 'r') as input_file:
                 json_data = json.load(input_file)
@@ -114,6 +114,32 @@ class TestWriter(unittest.TestCase):
         self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/is_data_present"]), self.n_pulses)
         self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/data"]), self.n_pulses)
 
+        # Even channels with missing values should still have the same number of pulses.
+        scalar_missing_data_n_values = 2
+        self.assertEqual(len(file["data/SCALAR_MISSING_DATA/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/SCALAR_MISSING_DATA/is_data_present"]), self.n_pulses)
+        self.assertEqual(len(file["data/SCALAR_MISSING_DATA/data"]), self.n_pulses)
+        self.assertEqual(sum(file["data/SCALAR_MISSING_DATA/is_data_present"]), scalar_missing_data_n_values)
+
+        # Even channels with missing values should still have the same number of pulses.
+        array_missing_data_n_values = 3
+        self.assertEqual(len(file["data/ARRAY_MISSING_DATA/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/ARRAY_MISSING_DATA/is_data_present"]), self.n_pulses)
+        self.assertEqual(len(file["data/ARRAY_MISSING_DATA/data"]), self.n_pulses)
+        self.assertEqual(sum(file["data/ARRAY_MISSING_DATA/is_data_present"]), array_missing_data_n_values)
+
+        # Even channels with missing values should still have the same number of pulses.
+        self.assertEqual(len(file["data/SCALAR_NO_DATA/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/SCALAR_NO_DATA/is_data_present"]), self.n_pulses)
+        self.assertEqual(len(file["data/SCALAR_NO_DATA/data"]), self.n_pulses)
+        self.assertEqual(sum(file["data/SCALAR_NO_DATA/is_data_present"]), 0)
+
+        # Even channels with missing values should still have the same number of pulses.
+        self.assertEqual(len(file["data/ARRAY_NO_DATA/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/ARRAY_NO_DATA/is_data_present"]), self.n_pulses)
+        self.assertEqual(len(file["data/ARRAY_NO_DATA/data"]), self.n_pulses)
+        self.assertEqual(sum(file["data/ARRAY_NO_DATA/is_data_present"]), 0)
+
         scalar_dataset = file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/data"]
         self.assertEqual(scalar_dataset.shape, (self.n_pulses, 1))
         self.assertEqual(str(scalar_dataset.dtype), "float32")
@@ -181,3 +207,75 @@ class TestWriter(unittest.TestCase):
         # The call should last less than 3 second: 10 seconds delay, but request was generated 9 seconds ago.
         # Account some time for file writing.
         self.assertLess(time_delta, 3)
+
+    def test_compact_file_format(self):
+        start_pulse_id = 100
+        stop_pulse_id = 200
+
+        parameters = {"general/created": "test",
+                      "general/user": "tester",
+                      "general/process": "test_process",
+                      "general/instrument": "mac",
+                      "output_file": TestWriter.TEST_OUTPUT_FILE,
+                      "output_file_format": "compact"}
+
+        status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
+        self.assertEqual(status, "stopped")
+
+        requests.post("http://localhost:%d/parameters" % self.rest_port, json=parameters)
+        requests.put("http://localhost:%d/start_pulse_id/%d" % (self.rest_port, start_pulse_id))
+
+        status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
+        self.assertEqual(status, "receiving")
+
+        requests.put("http://localhost:%d/stop_pulse_id/%d" % (self.rest_port, stop_pulse_id))
+
+        status = requests.get("http://localhost:%d/status" % self.rest_port).json()["status"]
+        self.assertEqual(status, "stopped")
+
+        # Wait for the chain to complete.
+        sleep(2)
+
+        file = h5py.File(TestWriter.TEST_OUTPUT_FILE)
+
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/is_data_present"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/data"]), self.n_pulses)
+
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/is_data_present"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/data"]), self.n_pulses)
+
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/is_data_present"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/data"]), self.n_pulses)
+
+        scalar_dataset = file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/data"]
+        self.assertEqual(scalar_dataset.shape, (self.n_pulses, 1))
+        self.assertEqual(str(scalar_dataset.dtype), "float32")
+
+        array_dataset = file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/data"]
+        self.assertEqual(array_dataset.shape, (self.n_pulses, 1024))
+        self.assertEqual(str(array_dataset.dtype), "float32")
+
+        # Defined at the end of data/dispatching_layer_sample.json
+        scalar_missing_data_n_values = 2
+        scalar_missing_data_pulse_ids = [5721143360, 5721143380]
+        self.assertEqual(len(file["data/SCALAR_MISSING_DATA/pulse_id"]), scalar_missing_data_n_values)
+        self.assertEqual(len(file["data/SCALAR_MISSING_DATA/is_data_present"]), scalar_missing_data_n_values)
+        self.assertEqual(len(file["data/SCALAR_MISSING_DATA/data"]), scalar_missing_data_n_values)
+        self.assertListEqual(list(file["data/SCALAR_MISSING_DATA/pulse_id"]), scalar_missing_data_pulse_ids)
+        self.assertListEqual(list(file["data/SCALAR_MISSING_DATA/is_data_present"]),
+                             [True] * scalar_missing_data_n_values)
+
+        # Defined at the end of data/dispatching_layer_sample.json
+        self.assertEqual(len(file["data/SCALAR_NO_DATA/pulse_id"]), 0)
+        self.assertEqual(len(file["data/SCALAR_NO_DATA/is_data_present"]), 0)
+        self.assertEqual(len(file["data/SCALAR_NO_DATA/data"]), 0)
+        self.assertListEqual(list(file["data/SCALAR_NO_DATA/data"].shape), [0, 1])
+
+        # Defined at the end of data/dispatching_layer_sample.json
+        self.assertEqual(len(file["data/ARRAY_NO_DATA/pulse_id"]), 0)
+        self.assertEqual(len(file["data/ARRAY_NO_DATA/is_data_present"]), 0)
+        self.assertEqual(len(file["data/ARRAY_NO_DATA/data"]), 0)
+        self.assertListEqual(list(file["data/ARRAY_NO_DATA/data"].shape), [0, 2])
