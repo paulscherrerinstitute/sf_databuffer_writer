@@ -172,9 +172,16 @@ class StreamRequestSender(object):
 
         if self.epics_writer_url:
 
-            _logger.info("Sending epics writer request to url %s" % self.epics_writer_url)
-
             try:
-                requests.post(url=self.epics_writer_url, json=write_request)
+
+                epics_writer_request = {
+                    "range": json.loads(write_request["data_api_request"])["range"],
+                    "parameters": json.loads(write_request["parameters"])
+                }
+
+                _logger.info("Sending epics writer request %s" % epics_writer_request)
+
+                requests.post(url=self.epics_writer_url, json=epics_writer_request)
+
             except Exception as e:
                 _logger.warning("Error while trying to forward the write request to the epics writer.", e)
