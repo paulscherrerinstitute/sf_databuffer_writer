@@ -3,6 +3,8 @@ from time import time
 
 import logging
 import json
+
+import requests
 from bsread.sender import Sender
 
 from sf_databuffer_writer import config
@@ -146,14 +148,16 @@ class BrokerManager(object):
 
 
 class StreamRequestSender(object):
-    def __init__(self, output_port, queue_length, send_timeout, mode):
+    def __init__(self, output_port, queue_length, send_timeout, mode, epics_writer_url):
         self.output_port = output_port
         self.queue_length = queue_length
         self.send_timeout = send_timeout
         self.mode = mode
+        self.epics_writer_url = epics_writer_url
 
-        _logger.info("Starting stream request sender with output_port=%s, queue_length=%s, send_timeout=%s and mode=%s"
-                     % (self.output_port, self.queue_length, self.send_timeout, self.mode))
+        _logger.info("Starting stream request sender with output_port=%s, queue_length=%s, send_timeout=%s, mode=%s "
+                     "and epics_writer_url=%s"
+                     % (self.output_port, self.queue_length, self.send_timeout, self.mode, self.epics_writer_url))
 
         self.output_stream = Sender(port=self.output_port,
                                     queue_size=self.queue_length,
@@ -165,3 +169,12 @@ class StreamRequestSender(object):
     def send(self, write_request):
         _logger.info("Sending write write_request: %s" % write_request)
         self.output_stream.send(data=write_request)
+
+        if self.epics_writer_url:
+
+            _logger.info("Sending epics writer request to url %s" % self.epics_writer_url)
+
+            try:
+                requests.post(url=self.epics_writer_url, json=write_request)
+            except Exception as e:
+                _logger.warning("Error while trying to forward the write request to the epics writer.", e)
