@@ -57,7 +57,7 @@ def run():
     parser.add_argument("--audit_trail_only", action="store_true",
                         help="Do not send data over ZMQ. Write audit trail only.")
 
-    parser.add_argument("--epics_writer_url", default=None,
+    parser.add_argument("--epics_writer_url", default=config.DEFAULT_EPICS_WRITER_URL,
                         help="Epics writer URL to notify for new acquisition.")
 
     arguments = parser.parse_args()
