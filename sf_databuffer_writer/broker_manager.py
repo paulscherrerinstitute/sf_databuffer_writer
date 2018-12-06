@@ -1,5 +1,4 @@
 from datetime import datetime
-from time import time
 
 import logging
 import json
@@ -8,6 +7,7 @@ import requests
 from bsread.sender import Sender
 
 from sf_databuffer_writer import config
+from sf_databuffer_writer.utils import get_writer_request
 
 _logger = logging.getLogger(__name__)
 
@@ -110,23 +110,8 @@ class BrokerManager(object):
 
         _logger.info("Set stop_pulse_id=%d" % stop_pulse_id)
 
-        data_api_request = {
-            "channels": [{'name': ch} for ch in self.channels],
-            "range": {
-                "startPulseId": self.current_start_pulse_id,
-                "endPulseId": stop_pulse_id},
-            "response": {
-                "format": "json",
-                "compression": "none"},
-            "eventFields": ["channel", "pulseId", "value", "shape", "globalDate"],
-            "configFields": ["type", "shape"]
-        }
-
-        write_request = {
-            "data_api_request": json.dumps(data_api_request),
-            "parameters": json.dumps(self.current_parameters),
-            "timestamp": time()
-        }
+        write_request = get_writer_request(self.channels, self.current_parameters,
+                                           self.current_start_pulse_id, stop_pulse_id)
 
         self.current_start_pulse_id = None
         self.current_parameters = None
