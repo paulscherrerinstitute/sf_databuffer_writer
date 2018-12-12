@@ -11,7 +11,7 @@ from bsread import source, PULL
 from sf_databuffer_writer import config
 from sf_databuffer_writer.utils import get_timestamp_range_from_api_request, \
     filter_unwanted_pulse_ids
-from sf_databuffer_writer.writer_format import DataBufferH5Writer
+from sf_databuffer_writer.writer_format import DataBufferH5Writer, CompactDataBufferH5Writer
 
 _logger = logging.getLogger(__name__)
 
@@ -52,8 +52,9 @@ def audit_failed_write_request(data_api_request, parameters, timestamp):
 
 def write_data_to_file(parameters, json_data):
     output_file = parameters["output_file"]
+    output_file_format = parameters.get("output_file_format", "extended")
 
-    _logger.info("Writing data to output_file: %s", output_file)
+    _logger.info("Writing data to output_file %s with output_file_format", output_file, output_file_format)
 
     if not json_data:
         raise ValueError("Received data from data_api is empty. json_data=%s" % json_data)
@@ -61,7 +62,11 @@ def write_data_to_file(parameters, json_data):
     if not parameters:
         raise ValueError("Received parameters from broker are empty. parameters=%s" % parameters)
 
-    writer = DataBufferH5Writer(output_file, parameters)
+    if output_file_format == "compact":
+        writer = CompactDataBufferH5Writer(output_file, parameters)
+    else:
+        writer = DataBufferH5Writer(output_file, parameters)
+
     writer.write_data(json_data)
     writer.close()
 

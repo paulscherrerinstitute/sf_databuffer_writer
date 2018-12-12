@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 from logging import getLogger
 from time import time
@@ -30,6 +31,7 @@ def get_timestamp_range_from_api_request(data_api_request, request_timestamp):
 
 
 def filter_unwanted_pulse_ids(json_data, start_pulse_id, stop_pulse_id):
+   
    def get_index_from_pulse_id(name, data, target_pulse_id, direction=1):
        for index, pulse_id in ((i, d["pulseId"]) for i, d in enumerate(data[::direction])):
            if direction == 1 and pulse_id >= target_pulse_id:
@@ -42,6 +44,7 @@ def filter_unwanted_pulse_ids(json_data, start_pulse_id, stop_pulse_id):
    start_time = time()
    for channel_data in json_data:
        try:
+
            channel_name = channel_data["channel"]["name"]
            data = channel_data["data"]
 
@@ -49,8 +52,32 @@ def filter_unwanted_pulse_ids(json_data, start_pulse_id, stop_pulse_id):
            stop_index = get_index_from_pulse_id(channel_name, data, stop_pulse_id, direction=-1)
 
            data[:] = data[start_index:stop_index+1]
+           
        except:
            pass
 
-   _logger.info("Filtering pulse_ids took %s seconds." % (time()-start_time))
+    _logger.info("Filtering pulse_ids took %s seconds." % (time()-start_time))
+
+
+def get_writer_request(channels, parameters, start_pulse_id, stop_pulse_id):
+
+    data_api_request = {
+        "channels": [{'name': ch} for ch in channels],
+        "range": {
+            "startPulseId": start_pulse_id,
+            "endPulseId": stop_pulse_id},
+        "response": {
+            "format": "json",
+            "compression": "none"},
+        "eventFields": ["channel", "pulseId", "value", "shape", "globalDate"],
+        "configFields": ["type", "shape"]
+    }
+
+    write_request = {
+        "data_api_request": json.dumps(data_api_request),
+        "parameters": json.dumps(parameters),
+        "timestamp": time()
+    }
+
+    return write_request
 

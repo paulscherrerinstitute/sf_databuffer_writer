@@ -1,11 +1,13 @@
 from datetime import datetime
-from time import time
 
 import logging
 import json
+
+import requests
 from bsread.sender import Sender
 
 from sf_databuffer_writer import config
+from sf_databuffer_writer.utils import get_writer_request
 
 _logger = logging.getLogger(__name__)
 
@@ -108,23 +110,8 @@ class BrokerManager(object):
 
         _logger.info("Set stop_pulse_id=%d" % stop_pulse_id)
 
-        data_api_request = {
-            "channels": [{'name': ch} for ch in self.channels],
-            "range": {
-                "startPulseId": self.current_start_pulse_id,
-                "endPulseId": stop_pulse_id},
-            "response": {
-                "format": "json",
-                "compression": "none"},
-            "eventFields": ["channel", "pulseId", "value", "shape", "globalDate"],
-            "configFields": ["type", "shape"]
-        }
-
-        write_request = {
-            "data_api_request": json.dumps(data_api_request),
-            "parameters": json.dumps(self.current_parameters),
-            "timestamp": time()
-        }
+        write_request = get_writer_request(self.channels, self.current_parameters,
+                                           self.current_start_pulse_id, stop_pulse_id)
 
         self.current_start_pulse_id = None
         self.current_parameters = None
@@ -146,14 +133,16 @@ class BrokerManager(object):
 
 
 class StreamRequestSender(object):
-    def __init__(self, output_port, queue_length, send_timeout, mode):
+    def __init__(self, output_port, queue_length, send_timeout, mode, epics_writer_url):
         self.output_port = output_port
         self.queue_length = queue_length
         self.send_timeout = send_timeout
         self.mode = mode
+        self.epics_writer_url = epics_writer_url
 
-        _logger.info("Starting stream request sender with output_port=%s, queue_length=%s, send_timeout=%s and mode=%s"
-                     % (self.output_port, self.queue_length, self.send_timeout, self.mode))
+        _logger.info("Starting stream request sender with output_port=%s, queue_length=%s, send_timeout=%s, mode=%s "
+                     "and epics_writer_url=%s"
+                     % (self.output_port, self.queue_length, self.send_timeout, self.mode, self.epics_writer_url))
 
         self.output_stream = Sender(port=self.output_port,
                                     queue_size=self.queue_length,
@@ -165,3 +154,19 @@ class StreamRequestSender(object):
     def send(self, write_request):
         _logger.info("Sending write write_request: %s" % write_request)
         self.output_stream.send(data=write_request)
+
+        if self.epics_writer_url:
+
+            try:
+
+                epics_writer_request = {
+                    "range": json.loads(write_request["data_api_request"])["range"],
+                    "parameters": json.loads(write_request["parameters"])
+                }
+
+                _logger.info("Sending epics writer request %s" % epics_writer_request)
+
+                requests.put(url=self.epics_writer_url, json=epics_writer_request)
+
+            except Exception as e:
+                _logger.error("Error while trying to forward the write request to the epics writer.", e)
