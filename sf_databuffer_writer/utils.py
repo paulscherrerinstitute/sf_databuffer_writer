@@ -32,29 +32,30 @@ def get_timestamp_range_from_api_request(data_api_request, request_timestamp):
 
 def filter_unwanted_pulse_ids(json_data, start_pulse_id, stop_pulse_id):
    
-   def get_index_from_pulse_id(name, data, target_pulse_id, direction=1):
-       for index, pulse_id in ((i, d["pulseId"]) for i, d in enumerate(data[::direction])):
-           if direction == 1 and pulse_id >= target_pulse_id:
-               return index
-           elif direction == -1 and pulse_id <= target_pulse_id:
-               return len(data)-index-1
+    def get_index_from_pulse_id(name, data, target_pulse_id, direction=1):
+        for index, pulse_id in ((i, d["pulseId"]) for i, d in enumerate(data[::direction])):
+            if direction == 1 and pulse_id >= target_pulse_id:
+                return index
 
-       raise ValueError("Pulse id %s not found in channel %s." % (target_pulse_id, name))
+            elif direction == -1 and pulse_id <= target_pulse_id:
+                return len(data) - index - 1
 
-   start_time = time()
-   for channel_data in json_data:
-       try:
+        raise ValueError("Pulse id %s not found in channel %s." % (target_pulse_id, name))
 
-           channel_name = channel_data["channel"]["name"]
-           data = channel_data["data"]
+    start_time = time()
+    for channel_data in json_data:
+        try:
 
-           start_index = get_index_from_pulse_id(channel_name, data, start_pulse_id)
-           stop_index = get_index_from_pulse_id(channel_name, data, stop_pulse_id, direction=-1)
+            channel_name = channel_data["channel"]["name"]
+            data = channel_data["data"]
 
-           data[:] = data[start_index:stop_index+1]
-           
-       except:
-           pass
+            start_index = get_index_from_pulse_id(channel_name, data, start_pulse_id)
+            stop_index = get_index_from_pulse_id(channel_name, data, stop_pulse_id, direction=-1)
+
+            data[:] = data[start_index:stop_index+1]
+
+        except Exception as e:
+            _logger.error("Data filtering could not be done. Exception: ", e)
 
     _logger.info("Filtering pulse_ids took %s seconds." % (time()-start_time))
 
