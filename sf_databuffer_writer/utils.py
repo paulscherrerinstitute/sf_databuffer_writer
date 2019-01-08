@@ -2,6 +2,8 @@ import json
 from logging import getLogger
 from time import time
 
+from sf_databuffer_writer import config
+
 _logger = getLogger(__name__)
 
 
@@ -27,3 +29,20 @@ def get_writer_request(channels, parameters, start_pulse_id, stop_pulse_id):
 
     return write_request
 
+
+def verify_channels(channels):
+
+    _logger.info("Verifying limit of max %d bsread channels." % config.BROKER_CHANNELS_LIMIT)
+
+    n_channels = len(channels)
+    if n_channels > config.BROKER_CHANNELS_LIMIT:
+        raise ValueError("Too many bsread channels. Configured/Available: %d/%d."
+                         % (n_channels, config.BROKER_CHANNELS_LIMIT))
+
+    _logger.info("Verifying limit of max %d bsread picture channels." % config.BROKER_CHANNELS_LIMIT_PICTURE)
+
+    picture_channels = [x for x in channels if x.endswith(":FPICTURE")]
+    n_picture_channels = len(picture_channels)
+    if n_picture_channels > config.BROKER_CHANNELS_LIMIT_PICTURE:
+        raise ValueError("Too many picture channels. Configured/Available: %d/%d."
+                         % (n_picture_channels, config.BROKER_CHANNELS_LIMIT_PICTURE))

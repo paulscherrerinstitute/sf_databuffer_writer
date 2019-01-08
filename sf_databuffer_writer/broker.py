@@ -7,6 +7,7 @@ from bsread import PUSH
 from sf_databuffer_writer import config
 from sf_databuffer_writer.broker_manager import BrokerManager, StreamRequestSender
 from sf_databuffer_writer.rest_api import register_rest_interface
+from sf_databuffer_writer.utils import verify_channels
 
 _logger = logging.getLogger(__name__)
 
@@ -71,6 +72,8 @@ def run():
         file_lines = input_file.readlines()
         channels = [channel.strip() for channel in file_lines
                     if not channel.strip().startswith("#") and channel.strip()]
+
+    verify_channels(channels)
 
     start_server(channels=channels,
                  output_port=arguments.output_port,
