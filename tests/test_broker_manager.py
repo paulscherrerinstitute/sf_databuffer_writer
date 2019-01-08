@@ -4,7 +4,9 @@ import unittest
 import os
 from time import time
 
+from sf_databuffer_writer import config
 from sf_databuffer_writer.broker_manager import BrokerManager
+from sf_databuffer_writer.utils import verify_channels
 
 
 class MockRequestSender(object):
@@ -132,3 +134,28 @@ class TestBrokerManager(unittest.TestCase):
         manager.stop_writer(120)
 
         self.assertEqual(manager.get_status(), "stopped")
+
+    def test_verify_channels(self):
+        config.BROKER_CHANNELS_LIMIT = 4
+        config.BROKER_CHANNELS_LIMIT_PICTURE = 1
+
+        channels = ["test1", "test2", "test3", "test4"]
+        verify_channels(channels)
+
+        channels = ["test1", "test2", "test3", "test4:FPICTURE", ""]
+        verify_channels(channels)
+
+        channels = ["test1", "test2", "test3", "test4:FPICTURE", "", ""]
+        verify_channels(channels)
+
+        channels = ["test1", "test2", "test3", "test4", "test5"]
+        with self.assertRaisesRegex(ValueError, "Too many bsread channels"):
+            verify_channels(channels)
+
+        channels = ["test1", "test2", "test3", "test4", "test5:FPICTURE"]
+        with self.assertRaisesRegex(ValueError, "Too many bsread channels"):
+            verify_channels(channels)
+
+        channels = ["test1", "test2", "test3:FPICTURE", "test4:FPICTURE"]
+        with self.assertRaisesRegex(ValueError, "Too many picture channels"):
+            verify_channels(channels)

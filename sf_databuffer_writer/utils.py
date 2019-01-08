@@ -30,13 +30,14 @@ def get_writer_request(channels, parameters, start_pulse_id, stop_pulse_id):
     return write_request
 
 
-def verify_channels(channels):
+def verify_channels(input_channels):
 
     _logger.info("Verifying limit of max %d bsread channels." % config.BROKER_CHANNELS_LIMIT)
 
+    channels = [x for x in input_channels if x]
     n_channels = len(channels)
     if n_channels > config.BROKER_CHANNELS_LIMIT:
-        raise ValueError("Too many bsread channels. Configured/Available: %d/%d."
+        raise ValueError("Too many bsread channels. configured/limit: %d/%d."
                          % (n_channels, config.BROKER_CHANNELS_LIMIT))
 
     _logger.info("Verifying limit of max %d bsread picture channels." % config.BROKER_CHANNELS_LIMIT_PICTURE)
@@ -44,5 +45,5 @@ def verify_channels(channels):
     picture_channels = [x for x in channels if x.endswith(":FPICTURE")]
     n_picture_channels = len(picture_channels)
     if n_picture_channels > config.BROKER_CHANNELS_LIMIT_PICTURE:
-        raise ValueError("Too many picture channels. Configured/Available: %d/%d."
+        raise ValueError("Too many picture channels. configured/limit: %d/%d."
                          % (n_picture_channels, config.BROKER_CHANNELS_LIMIT_PICTURE))
