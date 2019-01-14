@@ -51,7 +51,7 @@ def run():
         output_file=args.output_file,
         start_pulse_id=args.start_pulse_id,
         stop_pulse_id=args.stop_pulse_id,
-        rest_api_host="http://%s",
+        rest_api_host="http://%s" % args.host,
         compact=args.compact
     )
 
