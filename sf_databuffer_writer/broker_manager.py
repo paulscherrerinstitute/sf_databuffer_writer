@@ -1,4 +1,5 @@
 from datetime import datetime
+from threading import Thread
 
 import logging
 import json
@@ -152,21 +153,25 @@ class StreamRequestSender(object):
         self.output_stream.open()
 
     def send(self, write_request):
+
         _logger.info("Sending write write_request: %s" % write_request)
         self.output_stream.send(data=write_request)
 
         if self.epics_writer_url:
 
-            try:
+	    def send_epics_request():
+                try:
+                    epics_writer_request = {
+                        "range": json.loads(write_request["data_api_request"])["range"],
+                        "parameters": json.loads(write_request["parameters"])
+                    }
+    
+                    _logger.info("Sending epics writer request %s" % epics_writer_request)
+    
+                    requests.put(url=self.epics_writer_url, json=epics_writer_request)
+    
+                except Exception as e:
+                    _logger.error("Error while trying to forward the write request to the epics writer.", e)
 
-                epics_writer_request = {
-                    "range": json.loads(write_request["data_api_request"])["range"],
-                    "parameters": json.loads(write_request["parameters"])
-                }
+        Thread(target=send_epics_request).start()
 
-                _logger.info("Sending epics writer request %s" % epics_writer_request)
-
-                requests.put(url=self.epics_writer_url, json=epics_writer_request)
-
-            except Exception as e:
-                _logger.error("Error while trying to forward the write request to the epics writer.", e)
