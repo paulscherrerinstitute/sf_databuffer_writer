@@ -159,7 +159,7 @@ class StreamRequestSender(object):
 
         if self.epics_writer_url:
 
-	    def send_epics_request():
+            def send_epics_request():
                 try:
                     epics_writer_request = {
                         "range": json.loads(write_request["data_api_request"])["range"],
