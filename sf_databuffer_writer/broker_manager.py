@@ -173,5 +173,5 @@ class StreamRequestSender(object):
                 except Exception as e:
                     _logger.error("Error while trying to forward the write request to the epics writer.", e)
 
-        Thread(target=send_epics_request).start()
+            Thread(target=send_epics_request).start()
 
