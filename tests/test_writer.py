@@ -239,14 +239,17 @@ class TestWriter(unittest.TestCase):
         file = h5py.File(TestWriter.TEST_OUTPUT_FILE)
 
         self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/global_date"]), self.n_pulses)
         self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/is_data_present"]), self.n_pulses)
         self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/data"]), self.n_pulses)
 
         self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/global_date"]), self.n_pulses)
         self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/is_data_present"]), self.n_pulses)
         self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MIN/data"]), self.n_pulses)
 
         self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/pulse_id"]), self.n_pulses)
+        self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/global_date"]), self.n_pulses)
         self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/is_data_present"]), self.n_pulses)
         self.assertEqual(len(file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-CALIBRATED/data"]), self.n_pulses)
 
@@ -279,3 +282,8 @@ class TestWriter(unittest.TestCase):
         self.assertEqual(len(file["data/ARRAY_NO_DATA/is_data_present"]), 0)
         self.assertEqual(len(file["data/ARRAY_NO_DATA/data"]), 0)
         self.assertListEqual(list(file["data/ARRAY_NO_DATA/data"].shape), [0, 2])
+
+        # Test new global_date field.
+        string_date = file["data/SAROP21-CVME-PBPS2:Lnk9Ch6-DATA-MAX/global_date"][0]
+        # Expected format: '2018-06-08T14:04:51.551143344+02:00'
+        self.assertTrue(isinstance(string_date, str))

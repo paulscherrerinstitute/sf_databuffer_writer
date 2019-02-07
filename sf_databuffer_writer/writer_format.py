@@ -143,6 +143,7 @@ class CompactDataBufferH5Writer(DataBufferH5Writer):
                 dataset_values = numpy.zeros(dtype=dataset_type, shape=dataset_shape)
                 dataset_value_present = numpy.zeros(shape=(n_data_points,), dtype="bool")
                 dataset_pulse_ids = numpy.zeros(shape=(n_data_points,), dtype="<i8")
+                dataset_global_time = numpy.zeros(shape=(n_data_points,), dtype=h5py.special_dtype(vlen=str))
 
                 if data:
                     for data_index, data_point in enumerate(data):
@@ -155,11 +156,13 @@ class CompactDataBufferH5Writer(DataBufferH5Writer):
                         dataset_values[data_index] = data_point["value"]
                         dataset_value_present[data_index] = 1
                         dataset_pulse_ids[data_index] = data_point["pulseId"]
+                        dataset_global_time[data_index] = data_point["globalDate"]
 
                 datasets_data[name] = {
                     "data": dataset_values,
                     "is_data_present": dataset_value_present,
-                    "pulse_id": dataset_pulse_ids
+                    "pulse_id": dataset_pulse_ids,
+                    "global_date": dataset_global_time
                 }
 
             except Exception as e:
@@ -180,5 +183,6 @@ class CompactDataBufferH5Writer(DataBufferH5Writer):
 
         for name, data in datasets_data.items():
             self.file["/data/" + name + "/pulse_id"] = data["pulse_id"]
+            self.file["/data/" + name + "/global_date"] = data["global_date"]
             self.file["/data/" + name + "/data"] = data["data"]
             self.file["/data/" + name + "/is_data_present"] = data["is_data_present"]
