@@ -4,6 +4,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+
 def create_broker_request(channels, output_file, start_pulse_id, stop_pulse_id, rest_api_host, compact):
 
     _logger.info("Broker hostname: %s", rest_api_host)
@@ -26,6 +27,7 @@ def create_broker_request(channels, output_file, start_pulse_id, stop_pulse_id, 
     
     _logger.info("Request sent. Soon check for the output file %s.", output_file)
 
+
 def run():
     parser = argparse.ArgumentParser(description='Manual broker test')
     parser.add_argument("channels_file", type=str, help="JSON file with channels to buffer.")
@@ -33,7 +35,8 @@ def run():
     parser.add_argument("start_pulse_id", type=int, help="Start pulse_id to write.")
     parser.add_argument("stop_pulse_id", type=int, help="Stop pulse_id to write.")
     parser.add_argument("--host", help="Hostname of broker rest API\nFormat: hostname:port", default="localhost:1002")
-    parser.add_argument("--compact", action='store_true', help="broker rest API\nFormat: hostname:port", default="localhost:1002")
+    parser.add_argument("--compact", action='store_true', help="broker rest API\nFormat: hostname:port",
+                        default="localhost:1002")
     parser.add_argument("--log_level", default="INFO",
                         choices=['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'], help="Log level to use.")
 
