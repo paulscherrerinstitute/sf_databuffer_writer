@@ -10,7 +10,7 @@ _logger = getLogger(__name__)
 def get_writer_request(channels, parameters, start_pulse_id, stop_pulse_id):
 
     data_api_request = {
-        "channels": [{'name': ch} for ch in channels],
+        "channels": [{'name': ch, 'backend': "sf-databuffer"} for ch in channels],
         "range": {
             "startPulseId": start_pulse_id,
             "endPulseId": stop_pulse_id},
