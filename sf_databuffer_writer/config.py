@@ -14,6 +14,7 @@ DEFAULT_AUDIT_FILENAME = "/var/log/sf_databuffer_audit.log"
 
 DATA_API_QUERY_ADDRESS = "https://data-api.psi.ch/sf/query"
 DATA_BACKEND = "sf-databuffer"
+IMAGE_BACKEND = "sf-imagebuffer"
 
 BROKER_CHANNELS_LIMIT = 100
 BROKER_CHANNELS_LIMIT_PICTURE = 2
