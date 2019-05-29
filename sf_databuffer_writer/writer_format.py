@@ -59,9 +59,16 @@ class DataBufferH5Writer(object):
         # }
 
         for channel_data in json_data:
-            name = channel_data["channel"]["name"]
-            data = channel_data["data"]
-
+            try:
+                name = channel_data["channel"]["name"]
+                data = channel_data["data"]
+            except:
+                import sys
+                _logger.error("Error in channel {}, full error following".format(channel_data))
+                _logger.error("JSON Data: {}".format(json_data))
+                _logger.error(sys.exc_info()[1])
+                raise RuntimeError
+            
             _logger.debug("Formatting data for channel %s." % name)
 
             try:
