@@ -46,7 +46,8 @@ class TestBrokerManager(unittest.TestCase):
 
         self.assertEqual(data_api_request["range"]["startPulseId"], start_pulse_id)
         self.assertEqual(data_api_request["range"]["endPulseId"], stop_pulse_id)
-        self.assertListEqual(data_api_request["channels"], [{'name': ch} for ch in channels])
+        self.assertListEqual(data_api_request["channels"], [{'name': ch, 'backend': config.DATA_BACKEND}
+                                                            for ch in channels])
 
         self.assertDictEqual(request_parameters, parameters)
 

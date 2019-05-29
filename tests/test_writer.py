@@ -40,9 +40,9 @@ class TestWriter(unittest.TestCase):
             with open(test_data_file, 'r') as input_file:
                 json_data = json.load(input_file)
 
-            return json_data
+            return json_data, 1001
 
-        self.n_pulses = len(fake_data("whatever")[0]["data"])
+        self.n_pulses = len(fake_data("whatever")[0][0]["data"])
 
         def writer_start_server():
             writer.get_data_from_buffer = fake_data

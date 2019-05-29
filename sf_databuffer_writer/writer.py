@@ -77,7 +77,7 @@ def get_data_from_buffer(data_api_request):
 
     response = requests.post(url=config.DATA_API_QUERY_ADDRESS, json=data_api_request)
 
-    return response.json()
+    return response.json(), len(response.content)
 
 
 def process_message(message, data_retrieval_delay):
@@ -85,6 +85,9 @@ def process_message(message, data_retrieval_delay):
     data_api_request = None
     parameters = None
     request_timestamp = None
+
+    data = None
+    data_len = 0
 
     try:
         data_api_request = json.loads(message.data.data["data_api_request"].value)
@@ -116,8 +119,8 @@ def process_message(message, data_retrieval_delay):
         _logger.info("Sleeping finished. Retrieving data.")
 
         start_time = time()
-        data = get_data_from_buffer(data_api_request)
-        _logger.info("Data retrieval took %s seconds." % (time() - start_time))
+        data, data_len = get_data_from_buffer(data_api_request)
+        _logger.info("Data retrieval (%d bytes) took %s seconds." % (data_len, time() - start_time))
 
         start_time = time()
         write_data_to_file(parameters, data)
@@ -127,6 +130,11 @@ def process_message(message, data_retrieval_delay):
         audit_failed_write_request(data_api_request, parameters, request_timestamp)
 
         _logger.error("Error while trying to write a requested data range.", e)
+
+        if data_len < 1000:
+            _logger.error("Server response that caused the error:\n%s", data)
+        else:
+            _logger.error("Server response was to large to be included into the log file.")
 
 
 def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retrieval_delay=None):

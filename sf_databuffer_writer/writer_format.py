@@ -51,6 +51,13 @@ class DataBufferH5Writer(object):
 
         datasets_data = {}
 
+        # Channel data format example
+        # channel_data = {
+        #     "data": [],
+        #     "configs": [{"shape": [2], "type": "float32"}],
+        #     "channel": {"name": "ARRAY_NO_DATA", "backend": "sf-databuffer"}
+        # }
+
         for channel_data in json_data:
             name = channel_data["channel"]["name"]
             data = channel_data["data"]
