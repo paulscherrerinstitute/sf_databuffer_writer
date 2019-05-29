@@ -101,8 +101,10 @@ class DataBufferH5Writer(object):
                     "global_date": dataset_global_time
                 }
 
-            except:
+            except Exception as e:
                 _logger.warning("Cannot convert channel_name %s. Is the channel is the data buffer?" % name)
+                _logger.error("Channel %s conversion error: %s" % (name, e))
+                raise
 
         return pulse_ids, datasets_data
 
@@ -193,6 +195,7 @@ class CompactDataBufferH5Writer(DataBufferH5Writer):
             except Exception as e:
                 _logger.warning("Cannot convert channel_name %s. Is the channel is the data buffer?" % name)
                 _logger.error("Channel %s conversion error: %s" % (name, e))
+                raise
 
         return datasets_data
 
