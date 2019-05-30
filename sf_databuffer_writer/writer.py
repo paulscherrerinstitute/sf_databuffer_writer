@@ -79,9 +79,13 @@ def get_data_from_buffer(data_api_request):
 
     if not data:
         raise ValueError("Received data from data_api is empty. json_data=%s" % json_data)
-    # The response is a list if response is OK, otherwise its a dictionary, ofcourse.     
-    if isinstance(data, dict) and data.get("status") == 500:
-       raise Exception("Server returned error: %s" % data) 
+
+    # The response is a list if status is OK, otherwise its a dictionary, ofcourse.     
+    if isinstance(data, dict):
+        if data.get("status") == 500:
+            raise Exception("Server returned error: %s" % data) 
+
+        raise Exception("Server returned a dict (keys: %s), but a list was expected." % list(data.keys()))
     
     return data, data_len
 
