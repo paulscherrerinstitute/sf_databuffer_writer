@@ -33,7 +33,7 @@ class DataBufferH5Writer(object):
     def _build_datasets_data(self, json_data):
 
         if not isinstance(json_data, list):
-            raise ValueError("json_data should be a list, but its %s." % type(json_data)
+            raise ValueError("json_data should be a list, but its %s." % type(json_data))
 
         pulse_ids = set()
 
@@ -145,7 +145,7 @@ class CompactDataBufferH5Writer(DataBufferH5Writer):
         datasets_data = {}
 
         if not isinstance(json_data, list):
-            raise ValueError("json_data should be a list, but its %s." % type(json_data)
+            raise ValueError("json_data should be a list, but its %s." % type(json_data))
 
         for channel_data in json_data:
             
