@@ -32,9 +32,15 @@ class DataBufferH5Writer(object):
 
     def _build_datasets_data(self, json_data):
 
+        if not isinstance(json_data, list):
+            raise ValueError("json_data should be a list, but its %s." % type(json_data)
+
         pulse_ids = set()
 
         for channel_data in json_data:
+            if not isinstance(channel_data, dict):
+                raise ValueError("channel_data should be a dict, but its %s." % type(channel_data))
+            
             data = channel_data["data"]
 
             if not data:
@@ -50,7 +56,7 @@ class DataBufferH5Writer(object):
         _logger.info("Built array of pulse_ids. n_data_points=%d" % n_data_points)
 
         datasets_data = {}
-
+        
         # Channel data format example
         # channel_data = {
         #     "data": [],
@@ -61,18 +67,12 @@ class DataBufferH5Writer(object):
         for channel_data in json_data:
             try:
                 name = channel_data["channel"]["name"]
+                _logger.debug("Formatting data for channel %s." % name)
+
                 data = channel_data["data"]
-            except:
-                import sys
-                _logger.error("Error in channel {}, full error following".format(channel_data))
-                _logger.error("JSON Data: {}".format(json_data))
-                _logger.error(sys.exc_info()[1])
-                raise RuntimeError
-            
-            _logger.debug("Formatting data for channel %s." % name)
-
-            try:
-
+                if not data:
+                    raise ValueError("There is no data for channel %s." % name)
+                
                 channel_type = channel_data["configs"][0]["type"]
                 channel_shape = channel_data["configs"][0]["shape"]
 
@@ -102,8 +102,7 @@ class DataBufferH5Writer(object):
                 }
 
             except Exception as e:
-                _logger.warning("Cannot convert channel_name %s. Is the channel is the data buffer?" % name)
-                _logger.error("Channel %s conversion error: %s" % (name, e))
+                _logger.error("Cannot convert channel_name %s." % name)
                 raise
 
         return pulse_ids, datasets_data
