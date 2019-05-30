@@ -145,26 +145,26 @@ class CompactDataBufferH5Writer(DataBufferH5Writer):
 
         datasets_data = {}
 
+        if not isinstance(json_data, list):
+            raise ValueError("json_data should be a list, but its %s." % type(json_data)
+
         for channel_data in json_data:
+            
+            if not isinstance(channel_data, dict):
+                raise ValueError("channel_data should be a dict, but its %s." % type(channel_data))
+
             try:
                 name = channel_data["channel"]["name"]
+                _logger.debug("Formatting data for channel %s." % name)
+
                 data = channel_data["data"]
-            except:
-                import sys
-                _logger.error("Error in channel {}, full error following".format(channel_data))
-                _logger.error("JSON Data: {}".format(json_data))
-                _logger.error(sys.exc_info()[1])
-                raise RuntimeError
-
-            _logger.debug("Formatting data for channel %s." % name)
-
-            try:
+                if not data:
+                    raise ValueError("There is no data for channel %s." % name)
 
                 channel_type = channel_data["configs"][0]["type"]
                 channel_shape = channel_data["configs"][0]["shape"]
 
-                n_data_points = len(data) if data else 0
-
+                n_data_points = len(data)
                 dataset_type, dataset_shape = self._get_dataset_definition(channel_type, channel_shape, n_data_points)
 
                 dataset_values = numpy.zeros(dtype=dataset_type, shape=dataset_shape)
@@ -193,8 +193,7 @@ class CompactDataBufferH5Writer(DataBufferH5Writer):
                 }
 
             except Exception as e:
-                _logger.warning("Cannot convert channel_name %s. Is the channel is the data buffer?" % name)
-                _logger.error("Channel %s conversion error: %s" % (name, e))
+                _logger.error("Cannot convert channel_name %s." % name)
                 raise
 
         return datasets_data
