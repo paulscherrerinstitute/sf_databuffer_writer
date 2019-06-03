@@ -49,16 +49,14 @@ def audit_failed_write_request(data_api_request, parameters, timestamp):
 
 
 def write_data_to_file(parameters, json_data):
+    
+    if not parameters:
+        raise ValueError("Received parameters from broker are empty. parameters=%s" % parameters)
+    
     output_file = parameters["output_file"]
     output_file_format = parameters.get("output_file_format", "extended")
 
     _logger.info("Writing data to output_file %s with output_file_format %s.", output_file, output_file_format)
-
-    if not json_data:
-        raise ValueError("Received data from data_api is empty. json_data=%s" % json_data)
-
-    if not parameters:
-        raise ValueError("Received parameters from broker are empty. parameters=%s" % parameters)
 
     if output_file_format == "compact":
         writer = CompactDataBufferH5Writer(output_file, parameters)
@@ -77,11 +75,22 @@ def get_data_from_buffer(data_api_request):
 
     response = requests.post(url=config.DATA_API_QUERY_ADDRESS, json=data_api_request)
 
-    return response.json(), len(response.content)
+    data, data_len = response.json(), len(response.content)
+
+    if not data:
+        raise ValueError("Received data from data_api is empty. json_data=%s" % json_data)
+
+    # The response is a list if status is OK, otherwise its a dictionary, ofcourse.     
+    if isinstance(data, dict):
+        if data.get("status") == 500:
+            raise Exception("Server returned error: %s" % data) 
+
+        raise Exception("Server returned a dict (keys: %s), but a list was expected." % list(data.keys()))
+    
+    return data, data_len
 
 
-def process_message(message, data_retrieval_delay):
-
+def process_message(message, data_retrieval_delay): 
     data_api_request = None
     parameters = None
     request_timestamp = None
@@ -98,6 +107,21 @@ def process_message(message, data_retrieval_delay):
             output_file,
             data_api_request["range"]["startPulseId"],
             data_api_request["range"]["endPulseId"]))
+
+      	mapping_request = {'range': {'endPulseId': data_api_request["range"]["endPulseId"]), 
+   				     'startPulseId': data_api_request["range"]["startPulseId"]}}
+	mapping_response = requests.post(url=config.DATA_API_QUERY_ADDRESS + "/mapping", json=mapping_request).json()
+
+	del data_api_request["range"]["startPulseId"]
+	data_api_request["range"]["startSeconds"] = mapping_response[0]["start"]["globalSeconds"]
+
+	del data_api_request["range"]["endPulseId"]
+	data_api_request["range"]["endSeconds"] = mapping_response[0]["end"]["globalSeconds"]
+
+        _logger.info("Modified request to write file %s from startSeconds=%s to endSeconds=%s" % (
+            output_file,
+            data_api_request["range"]["startSeconds"],
+            data_api_request["range"]["endSeconds"]))
 
         if output_file == "/dev/null":
             _logger.info("Output file set to /dev/null. Skipping request.")
@@ -128,13 +152,8 @@ def process_message(message, data_retrieval_delay):
 
     except Exception as e:
         audit_failed_write_request(data_api_request, parameters, request_timestamp)
-
-        _logger.error("Error while trying to write a requested data range.", e)
-
-        if data_len < 1000:
-            _logger.error("Server response that caused the error:\n%s", data)
-        else:
-            _logger.error("Server response was to large to be included into the log file.")
+        
+        _logger.exception("Error while trying to write a requested data range.")
 
 
 def process_requests(stream_address, receive_timeout=None, mode=PULL, data_retrieval_delay=None):
