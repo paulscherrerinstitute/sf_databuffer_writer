@@ -9,6 +9,7 @@ import requests
 from bsread import source, PULL
 
 from sf_databuffer_writer import config
+from sf_databuffer_writer.utils import transform_range_from_pulse_id_to_timestamp
 from sf_databuffer_writer.writer_format import DataBufferH5Writer, CompactDataBufferH5Writer
 
 _logger = logging.getLogger(__name__)
@@ -78,9 +79,9 @@ def get_data_from_buffer(data_api_request):
     data, data_len = response.json(), len(response.content)
 
     if not data:
-        raise ValueError("Received data from data_api is empty. json_data=%s" % json_data)
+        raise ValueError("Received data from data_api is empty. data=%s" % data)
 
-    # The response is a list if status is OK, otherwise its a dictionary, ofcourse.     
+    # The response is a list if status is OK, otherwise its a dictionary, of course.
     if isinstance(data, dict):
         if data.get("status") == 500:
             raise Exception("Server returned error: %s" % data) 
@@ -90,13 +91,10 @@ def get_data_from_buffer(data_api_request):
     return data, data_len
 
 
-def process_message(message, data_retrieval_delay): 
+def process_message(message, data_retrieval_delay):
     data_api_request = None
     parameters = None
     request_timestamp = None
-
-    data = None
-    data_len = 0
 
     try:
         data_api_request = json.loads(message.data.data["data_api_request"].value)
@@ -108,20 +106,7 @@ def process_message(message, data_retrieval_delay):
             data_api_request["range"]["startPulseId"],
             data_api_request["range"]["endPulseId"]))
 
-      	mapping_request = {'range': {'endPulseId': data_api_request["range"]["endPulseId"]), 
-   				     'startPulseId': data_api_request["range"]["startPulseId"]}}
-	mapping_response = requests.post(url=config.DATA_API_QUERY_ADDRESS + "/mapping", json=mapping_request).json()
-
-	del data_api_request["range"]["startPulseId"]
-	data_api_request["range"]["startSeconds"] = mapping_response[0]["start"]["globalSeconds"]
-
-	del data_api_request["range"]["endPulseId"]
-	data_api_request["range"]["endSeconds"] = mapping_response[0]["end"]["globalSeconds"]
-
-        _logger.info("Modified request to write file %s from startSeconds=%s to endSeconds=%s" % (
-            output_file,
-            data_api_request["range"]["startSeconds"],
-            data_api_request["range"]["endSeconds"]))
+        data_api_request = transform_range_from_pulse_id_to_timestamp(data_api_request)
 
         if output_file == "/dev/null":
             _logger.info("Output file set to /dev/null. Skipping request.")
@@ -150,9 +135,9 @@ def process_message(message, data_retrieval_delay):
         write_data_to_file(parameters, data)
         _logger.info("Data writing took %s seconds." % (time() - start_time))
 
-    except Exception as e:
+    except:
         audit_failed_write_request(data_api_request, parameters, request_timestamp)
-        
+
         _logger.exception("Error while trying to write a requested data range.")
 
 

@@ -1,17 +1,20 @@
 import json
+from copy import deepcopy
 from logging import getLogger
 from time import time
 
-from datetime import datetime, timedelta
+from datetime import datetime
+import requests
+
 from sf_databuffer_writer import config
 
 _logger = getLogger(__name__)
 
 
 def get_writer_request(channels, parameters, start_pulse_id, stop_pulse_id):
-
     data_api_request = {
-        "channels": [{'name': ch, 'backend': config.IMAGE_BACKEND if ch.endswith(":FPICTURE") else config.DATA_BACKEND} for ch in channels],
+        "channels": [{'name': ch, 'backend': config.IMAGE_BACKEND if ch.endswith(":FPICTURE") else config.DATA_BACKEND}
+                     for ch in channels],
         "range": {
             "startPulseId": start_pulse_id,
             "endPulseId": stop_pulse_id},
@@ -32,7 +35,6 @@ def get_writer_request(channels, parameters, start_pulse_id, stop_pulse_id):
 
 
 def verify_channels(input_channels):
-
     _logger.info("Verifying limit of max %d bsread channels." % config.BROKER_CHANNELS_LIMIT)
 
     channels = [x for x in input_channels if x]
@@ -50,8 +52,32 @@ def verify_channels(input_channels):
                          % (n_picture_channels, config.BROKER_CHANNELS_LIMIT_PICTURE))
 
 
-def get_timestamp_range_from_api_request(data_api_request, request_timestamp):
+def transform_range_from_pulse_id_to_timestamp(data_api_request):
 
+    new_data_api_request = deepcopy(data_api_request)
+
+    try:
+
+        mapping_request = {'range': {'startPulseId': data_api_request["range"]["startPulseId"],
+                                     'endPulseId': data_api_request["range"]["endPulseId"]}}
+
+        mapping_response = requests.post(url=config.DATA_API_QUERY_ADDRESS + "/mapping", json=mapping_request).json()
+
+        del new_data_api_request["range"]["startPulseId"]
+        new_data_api_request["range"]["startSeconds"] = mapping_response[0]["start"]["globalSeconds"]
+
+        del new_data_api_request["range"]["endPulseId"]
+        new_data_api_request["range"]["endSeconds"] = mapping_response[0]["end"]["globalSeconds"]
+
+        _logger.info("Transformed request to startSeconds and endSeconds. %s" % data_api_request)
+
+    except Exception as e:
+        raise RuntimeError("Cannot retrieve the pulse_id to timestamp mapping.") from e
+
+    return new_data_api_request
+
+
+def get_timestamp_range_from_api_request(data_api_request, request_timestamp):
     if request_timestamp is None:
         raise ValueError("Request timestamp cannot be none. Do you have the latest sf_databuffer_writer version?")
 
@@ -66,15 +92,15 @@ def get_timestamp_range_from_api_request(data_api_request, request_timestamp):
     end_date = datetime.fromtimestamp(request_timestamp)
     end_date = end_date.strftime("%Y-%m-%dT%H:%M:%S.000+02:00")
 
-    #start_date = end_date - timedelta(seconds=acquisition_time_seconds + start_delay_seconds)
+    # start_date = end_date - timedelta(seconds=acquisition_time_seconds + start_delay_seconds)
     start_date = request_timestamp - (acquisition_time_seconds + start_delay_seconds)
     start_date = datetime.fromtimestamp(start_date)
     start_date = start_date.strftime("%Y-%m-%dT%H:%M:%S.000+02:00")
 
     return start_date, end_date
 
+
 def filter_unwanted_pulse_ids(json_data, start_pulse_id, stop_pulse_id):
-   
     def get_index_from_pulse_id(name, data, target_pulse_id, direction=1):
         for index, pulse_id in ((i, d["pulseId"]) for i, d in enumerate(data[::direction])):
             if direction == 1 and pulse_id >= target_pulse_id:
@@ -95,10 +121,9 @@ def filter_unwanted_pulse_ids(json_data, start_pulse_id, stop_pulse_id):
             start_index = get_index_from_pulse_id(channel_name, data, start_pulse_id)
             stop_index = get_index_from_pulse_id(channel_name, data, stop_pulse_id, direction=-1)
 
-            data[:] = data[start_index:stop_index+1]
+            data[:] = data[start_index:stop_index + 1]
 
         except Exception as e:
             _logger.error("Data filtering could not be done. Exception: ", e)
 
-    _logger.info("Filtering pulse_ids took %s seconds." % (time()-start_time))
-
+    _logger.info("Filtering pulse_ids took %s seconds." % (time() - start_time))
