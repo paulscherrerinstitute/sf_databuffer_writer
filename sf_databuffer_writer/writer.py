@@ -90,8 +90,7 @@ def get_data_from_buffer(data_api_request):
     return data, data_len
 
 
-def process_message(message, data_retrieval_delay):
-
+def process_message(message, data_retrieval_delay): 
     data_api_request = None
     parameters = None
     request_timestamp = None
@@ -108,6 +107,21 @@ def process_message(message, data_retrieval_delay):
             output_file,
             data_api_request["range"]["startPulseId"],
             data_api_request["range"]["endPulseId"]))
+
+      	mapping_request = {'range': {'endPulseId': data_api_request["range"]["endPulseId"]), 
+   				     'startPulseId': data_api_request["range"]["startPulseId"]}}
+	mapping_response = requests.post(url=config.DATA_API_QUERY_ADDRESS + "/mapping", json=mapping_request).json()
+
+	del data_api_request["range"]["startPulseId"]
+	data_api_request["range"]["startSeconds"] = mapping_response[0]["start"]["globalSeconds"]
+
+	del data_api_request["range"]["endPulseId"]
+	data_api_request["range"]["endSeconds"] = mapping_response[0]["end"]["globalSeconds"]
+
+        _logger.info("Modified request to write file %s from startSeconds=%s to endSeconds=%s" % (
+            output_file,
+            data_api_request["range"]["startSeconds"],
+            data_api_request["range"]["endSeconds"]))
 
         if output_file == "/dev/null":
             _logger.info("Output file set to /dev/null. Skipping request.")
