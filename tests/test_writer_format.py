@@ -5,6 +5,7 @@ import os
 
 import h5py
 
+from sf_databuffer_writer import config
 from sf_databuffer_writer.writer import write_data_to_file
 
 
@@ -13,6 +14,7 @@ class TestWriter(unittest.TestCase):
 
     def setUp(self):
         self.data_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/")
+        config.ERROR_IF_NO_DATA = False
 
     def tearDown(self):
 
