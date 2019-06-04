@@ -28,13 +28,6 @@ class TestWriter(unittest.TestCase):
         self.stream_output_port = 10000
         self.rest_port = 11000
 
-        self.broker_process = Process(target=broker.start_server, args=(self.channels,
-                                                                        self.stream_output_port,
-                                                                        100,
-                                                                        self.rest_port))
-        self.broker_process.start()
-        sleep(1)
-
         def fake_data(_, _2=None):
             test_data_file = os.path.join(self.data_folder, "dispatching_layer_sample.json")
             with open(test_data_file, 'r') as input_file:
@@ -42,10 +35,20 @@ class TestWriter(unittest.TestCase):
 
             return json_data, 1001
 
+        config.ERROR_IF_NO_DATA = False
+        config.TRANSFORM_PULSE_ID_TO_TIMESTAMP_QUERY = False
+        writer.get_data_from_buffer = fake_data
+
+        self.broker_process = Process(target=broker.start_server, args=(self.channels,
+                                                                        self.stream_output_port,
+                                                                        100,
+                                                                        self.rest_port))
+        self.broker_process.start()
+        sleep(1)
+
         self.n_pulses = len(fake_data("whatever")[0][0]["data"])
 
         def writer_start_server():
-            writer.get_data_from_buffer = fake_data
             writer.start_server("tcp://localhost:%d" % self.stream_output_port)
 
         self.writer_process = Process(target=writer_start_server)
