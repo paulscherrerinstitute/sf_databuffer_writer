@@ -69,7 +69,7 @@ def transform_range_from_pulse_id_to_timestamp(data_api_request):
         del new_data_api_request["range"]["endPulseId"]
         new_data_api_request["range"]["endSeconds"] = mapping_response[0]["end"]["globalSeconds"]
 
-        _logger.info("Transformed request to startSeconds and endSeconds. %s" % data_api_request)
+        _logger.info("Transformed request to startSeconds and endSeconds. %s" % new_data_api_request)
 
     except Exception as e:
         raise RuntimeError("Cannot retrieve the pulse_id to timestamp mapping.") from e
