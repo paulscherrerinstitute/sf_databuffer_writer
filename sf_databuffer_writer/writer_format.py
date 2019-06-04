@@ -4,6 +4,8 @@ import h5py
 import numpy
 from bsread.data.serialization import channel_type_deserializer_mapping
 
+from sf_databuffer_writer import config
+
 _logger = logging.getLogger(__name__)
 
 
@@ -70,7 +72,8 @@ class DataBufferH5Writer(object):
                 _logger.debug("Formatting data for channel %s." % name)
 
                 data = channel_data["data"]
-                if not data:
+
+                if not data and config.ERROR_IF_NO_DATA:
                     raise ValueError("There is no data for channel %s." % name)
                 
                 channel_type = channel_data["configs"][0]["type"]
@@ -103,7 +106,9 @@ class DataBufferH5Writer(object):
 
             except Exception as e:
                 _logger.error("Cannot convert channel_name %s." % name)
-                raise
+
+                if config.ERROR_IF_NO_DATA:
+                    raise
 
         return pulse_ids, datasets_data
 
@@ -157,7 +162,7 @@ class CompactDataBufferH5Writer(DataBufferH5Writer):
                 _logger.debug("Formatting data for channel %s." % name)
 
                 data = channel_data["data"]
-                if not data:
+                if not data and config.ERROR_IF_NO_DATA:
                     raise ValueError("There is no data for channel %s." % name)
 
                 channel_type = channel_data["configs"][0]["type"]
@@ -193,7 +198,9 @@ class CompactDataBufferH5Writer(DataBufferH5Writer):
 
             except Exception as e:
                 _logger.error("Cannot convert channel_name %s." % name)
-                raise
+
+                if config.ERROR_IF_NO_DATA:
+                    raise
 
         return datasets_data
 
