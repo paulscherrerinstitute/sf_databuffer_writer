@@ -8,8 +8,7 @@ from time import time, sleep
 import requests
 from bsread import source, PULL
 
-from sf_databuffer_writer import config
-from sf_databuffer_writer.utils import transform_range_from_pulse_id_to_timestamp
+from sf_databuffer_writer import config, utils
 from sf_databuffer_writer.writer_format import DataBufferH5Writer, CompactDataBufferH5Writer
 
 _logger = logging.getLogger(__name__)
@@ -106,7 +105,8 @@ def process_message(message, data_retrieval_delay):
             data_api_request["range"]["startPulseId"],
             data_api_request["range"]["endPulseId"]))
 
-        data_api_request = transform_range_from_pulse_id_to_timestamp(data_api_request)
+        if config.TRANSFORM_PULSE_ID_TO_TIMESTAMP_QUERY:
+            data_api_request = utils.transform_range_from_pulse_id_to_timestamp(data_api_request)
 
         if output_file == "/dev/null":
             _logger.info("Output file set to /dev/null. Skipping request.")
