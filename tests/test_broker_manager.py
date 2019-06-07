@@ -10,6 +10,9 @@ from sf_databuffer_writer.utils import verify_channels
 
 
 class MockRequestSender(object):
+    def __init__(self):
+        self.write_request = None
+
     def send(self, write_request):
         self.write_request = write_request
 
@@ -79,6 +82,8 @@ class TestBrokerManager(unittest.TestCase):
 
     def test_audit_file(self):
         request_sender = MockRequestSender()
+        config.SEPARATE_CAMERA_CHANNELS = False
+
         channels = ["test_1", "test_2"]
         start_pulse_id = 100
         stop_pulse_id = 120
