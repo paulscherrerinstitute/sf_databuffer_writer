@@ -8,7 +8,7 @@ import requests
 from bsread.sender import Sender
 
 from sf_databuffer_writer import config
-from sf_databuffer_writer.utils import get_writer_request
+from sf_databuffer_writer.utils import get_writer_request, split_write_request
 
 _logger = logging.getLogger(__name__)
 
@@ -99,6 +99,14 @@ class BrokerManager(object):
         _logger.info("Set start_pulse_id %d." % start_pulse_id)
         self.current_start_pulse_id = start_pulse_id
 
+    def _process_write_request(self, request):
+        audit_write_request(self.audit_filename, request)
+
+        if not self.audit_trail_only:
+            self.request_sender.send(request)
+        else:
+            _logger.warning("Writing request to audit trail only (broker running with --audit_trail_only).")
+
     def stop_writer(self, stop_pulse_id):
 
         if self.current_start_pulse_id is None:
@@ -118,12 +126,14 @@ class BrokerManager(object):
         self.current_parameters = None
         self.last_stop_pulse_id = stop_pulse_id
 
-        audit_write_request(self.audit_filename, write_request)
+        if config.SEPARATE_CAMERA_CHANNELS:
+            multi_write_requests = split_write_request(write_request)
 
-        if not self.audit_trail_only:
-            self.request_sender.send(write_request)
+            for write_request_part in multi_write_requests:
+                self._process_write_request(write_request_part)
+
         else:
-            _logger.warning("Writing request to audit trail only (broker running with --audit_trail_only).")
+            self._process_write_request(write_request)
 
         self.statistics["last_sent_write_request"] = write_request
         self.statistics["last_sent_write_request_time"] = datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)
