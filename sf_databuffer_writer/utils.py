@@ -34,6 +34,22 @@ def get_writer_request(channels, parameters, start_pulse_id, stop_pulse_id):
     return write_request
 
 
+def get_separate_writer_requests(channels, parameters, start_pulse_id, stop_pulse_id):
+    camera_channels = []
+    bsread_channels = []
+
+    for channel in channels:
+        if channel.endswith(":FPICTURE"):
+            camera_channels.append([channel])
+        else:
+            bsread_channels.append(channel)
+
+    yield get_writer_request(bsread_channels, parameters, start_pulse_id, stop_pulse_id)
+
+    for camera_channel in camera_channels:
+        yield get_writer_request(camera_channel, parameters, start_pulse_id, stop_pulse_id)
+
+
 def verify_channels(input_channels):
     _logger.info("Verifying limit of max %d bsread channels." % config.BROKER_CHANNELS_LIMIT)
 
