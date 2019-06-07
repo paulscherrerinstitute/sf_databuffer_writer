@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name="sf_databuffer_writer",
-      version="0.3.0",
+      version="0.3.1",
       maintainer="Paul Scherrer Institute",
       maintainer_email="daq@psi.ch",
       author="Paul Scherrer Institute",
