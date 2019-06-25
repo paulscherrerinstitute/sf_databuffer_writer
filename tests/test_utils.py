@@ -9,7 +9,7 @@ class TestUtils(unittest.TestCase):
     def test_get_separate_writer_requests(self):
         start_pulse_id = 0
         stop_pulse_id = 10
-        parameters = {"empty": "parameters"}
+        parameters = {"output_file": "test.h5"}
 
         channels = ["channel_1", "channel_2"]
         write_requests = list(get_separate_writer_requests(channels, parameters, start_pulse_id, stop_pulse_id))
@@ -36,5 +36,8 @@ class TestUtils(unittest.TestCase):
 
             else:
                 self.assertTrue(channels[0]["name"].endswith(":FPICTURE"), "This channel should be a camera channel.")
+                self.assertEqual(json.loads(write_request["parameters"])["output_file"],
+                                 parameters["output_file"] + "_" + channels[0]["name"] + ".h5")
+                print(json.loads(write_request["parameters"])["output_file"])
 
         self.assertTrue(bsread_channels_found)
