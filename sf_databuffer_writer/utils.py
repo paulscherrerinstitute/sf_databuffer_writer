@@ -48,7 +48,7 @@ def get_separate_writer_requests(channels, parameters, start_pulse_id, stop_puls
     yield get_writer_request(bsread_channels, parameters, start_pulse_id, stop_pulse_id)
 
     for camera_channel in camera_channels:
-        camera_name = camera_channel[0]
+        camera_name = camera_channel[0][:-9]
 
         new_parameters = copy.deepcopy(parameters)
         new_parameters["output_file"] += "_" + camera_name + ".h5"
