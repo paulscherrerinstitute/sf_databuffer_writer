@@ -12,9 +12,11 @@ from sf_databuffer_writer.utils import verify_channels
 class MockRequestSender(object):
     def __init__(self):
         self.write_request = None
+        self.sendto_epics_writer = None
 
-    def send(self, write_request):
+    def send(self, write_request, sendto_epics_writer):
         self.write_request = write_request
+        self.sendto_epics_writer = sendto_epics_writer
 
 
 class TestBrokerManager(unittest.TestCase):
@@ -79,6 +81,7 @@ class TestBrokerManager(unittest.TestCase):
         self.assertDictEqual(request_parameters, parameters)
 
         self.assertTrue(time() - request_timestamp < 1)
+        self.assertTrue(request_sender.sendto_epics_writer)
 
     def test_audit_file(self):
         request_sender = MockRequestSender()

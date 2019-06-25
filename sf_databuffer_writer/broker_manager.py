@@ -98,11 +98,11 @@ class BrokerManager(object):
         _logger.info("Set start_pulse_id %d." % start_pulse_id)
         self.current_start_pulse_id = start_pulse_id
 
-    def _process_write_request(self, request):
+    def _process_write_request(self, request, sendto_epics_writer=True):
         audit_write_request(self.audit_filename, request)
 
         if not self.audit_trail_only:
-            self.request_sender.send(request)
+            self.request_sender.send(request, sendto_epics_writer)
         else:
             _logger.warning("Writing request to audit trail only (broker running with --audit_trail_only).")
 
@@ -119,9 +119,12 @@ class BrokerManager(object):
         _logger.info("Set stop_pulse_id=%d" % stop_pulse_id)
 
         if config.SEPARATE_CAMERA_CHANNELS:
+            first_iteration = True
             for write_request in get_separate_writer_requests(self.channels, self.current_parameters,
                                                               self.current_start_pulse_id, stop_pulse_id):
-                self._process_write_request(write_request)
+                # We send to the epics writer only in the first iteration - bsread channels (because of the filename).
+                self._process_write_request(write_request, sendto_epics_writer=first_iteration)
+                first_iteration = False
         else:
             write_request = get_writer_request(self.channels, self.current_parameters,
                                                self.current_start_pulse_id, stop_pulse_id)
@@ -158,12 +161,12 @@ class StreamRequestSender(object):
 
         self.output_stream.open()
 
-    def send(self, write_request):
+    def send(self, write_request, sendto_epics_writer=True):
 
         _logger.info("Sending write write_request: %s" % write_request)
         self.output_stream.send(data=write_request)
 
-        if self.epics_writer_url:
+        if self.epics_writer_url and sendto_epics_writer:
 
             def send_epics_request():
                 try:

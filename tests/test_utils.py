@@ -38,6 +38,5 @@ class TestUtils(unittest.TestCase):
                 self.assertTrue(channels[0]["name"].endswith(":FPICTURE"), "This channel should be a camera channel.")
                 self.assertEqual(json.loads(write_request["parameters"])["output_file"],
                                  parameters["output_file"] + "_" + channels[0]["name"][:-9] + ".h5")
-                print(json.loads(write_request["parameters"])["output_file"])
 
         self.assertTrue(bsread_channels_found)
