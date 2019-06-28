@@ -85,6 +85,8 @@ def transform_range_from_pulse_id_to_timestamp(data_api_request):
 
         mapping_response = requests.post(url=config.DATA_API_QUERY_ADDRESS + "/mapping", json=mapping_request).json()
 
+        _logger.info("Response to mapping request: %s", mapping_response)
+
         del new_data_api_request["range"]["startPulseId"]
         new_data_api_request["range"]["startSeconds"] = mapping_response[0]["start"]["globalSeconds"]
 
