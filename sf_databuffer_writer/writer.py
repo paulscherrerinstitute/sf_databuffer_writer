@@ -1,7 +1,7 @@
 import argparse
 import logging
 import os
-import json
+
 from datetime import datetime
 from time import time, sleep
 
@@ -12,6 +12,12 @@ from sf_databuffer_writer import config, utils
 from sf_databuffer_writer.writer_format import DataBufferH5Writer, CompactDataBufferH5Writer
 
 _logger = logging.getLogger(__name__)
+
+try:
+    import ujson as json
+except:
+    _logger.warning("There is no ujson in this environment. Performance will suffer.")
+    import json
 
 
 def create_folders(output_file):
@@ -75,7 +81,7 @@ def get_data_from_buffer(data_api_request):
 
     response = requests.post(url=config.DATA_API_QUERY_ADDRESS, json=data_api_request)
 
-    data, data_len = response.json(), len(response.content)
+    data, data_len = json.loads(response.content), len(response.content)
 
     if not data:
         raise ValueError("Received data from data_api is empty. data=%s" % data)
