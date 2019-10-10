@@ -51,7 +51,8 @@ def get_separate_writer_requests(channels, parameters, start_pulse_id, stop_puls
         camera_name = camera_channel[0][:-9]
 
         new_parameters = copy.deepcopy(parameters)
-        new_parameters["output_file"] += "_" + camera_name + ".h5"
+        if new_parameters["output_file"] != "/dev/null":
+            new_parameters["output_file"] += "_" + camera_name + ".h5"
 
         yield get_writer_request(camera_channel, new_parameters, start_pulse_id, stop_pulse_id)
 
