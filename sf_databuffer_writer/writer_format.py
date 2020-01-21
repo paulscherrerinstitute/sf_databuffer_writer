@@ -4,6 +4,8 @@ import h5py
 import numpy
 from bsread.data.serialization import channel_type_deserializer_mapping
 
+import os
+
 from sf_databuffer_writer import config
 
 _logger = logging.getLogger(__name__)
@@ -13,6 +15,9 @@ class DataBufferH5Writer(object):
     def __init__(self, output_file, parameters):
         self.output_file = output_file
         self.parameters = parameters
+
+        path_to_file = os.path.dirname(self.output_file)
+        os.makedirs(path_to_file, exist_ok=True)        
 
         self.file = h5py.File(self.output_file, "w")
 
