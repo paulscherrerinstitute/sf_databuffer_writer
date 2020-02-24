@@ -95,6 +95,31 @@ def get_data_from_buffer(data_api_request):
     
     return data, data_len
 
+def get_and_write_data_by_api3(data_api_request_pulseid, parameters):
+    import data_api3.h5 as h5
+    import pytz
+
+    data_api_request = utils.transform_range_from_pulse_id_to_timestamp(data_api_request_pulseid)
+
+    channels = [channel["name"] for channel in data_api_request["channels"]]
+
+    filename = parameters["output_file"]
+
+    start = datetime.fromtimestamp(float(data_api_request["range"]["startSeconds"])).astimezone(pytz.timezone('UTC')).strftime("%Y-%m-%dT%H:%M:%S.%fZ")  # isoformat()  # "2019-12-13T09:00:00.00
+    end   = datetime.fromtimestamp(float(data_api_request["range"]["endSeconds"])).astimezone(pytz.timezone('UTC')).strftime("%Y-%m-%dT%H:%M:%S.%fZ")  # isoformat()  # "2019-12-13T09:00:00.00
+
+    query = {
+        "channels": channels,
+        "range": {
+            "type": "date",
+            "startDate": start,
+            "endDate": end
+        }
+    }
+
+    _logger.info("Going to make query %s to write file %s from %s " % (query, filename, config.IMAGE_API_QUERY_ADDRESS))
+
+    h5.request(query, filename, url=config.IMAGE_API_QUERY_ADDRESS)
 
 def process_message(message, data_retrieval_delay):
     data_api_request = None
@@ -134,12 +159,18 @@ def process_message(message, data_retrieval_delay):
         _logger.info("Sleeping finished. Retrieving data.")
 
         start_time = time()
-        data, data_len = get_data_from_buffer(data_api_request)
-        _logger.info("Data retrieval (%d bytes) took %s seconds." % (data_len, time() - start_time))
+        if 'channels' in data_api_request and len(data_api_request['channels']) > 0 
+            if data_api_request['channels'][0]['backend'] != 'sf-imagebuffer':
+                data, data_len = get_data_from_buffer(data_api_request)
+                _logger.info("Data retrieval (%d bytes) took %s seconds." % (data_len, time() - start_time))
 
-        start_time = time()
-        write_data_to_file(parameters, data)
-        _logger.info("Data writing took %s seconds." % (time() - start_time))
+                start_time = time()
+                write_data_to_file(parameters, data)
+                _logger.info("Data writing took %s seconds." % (time() - start_time))
+            else:
+                get_and_write_data_by_api3(data_api_request, parameters)
+                _logger.info("Data writing took %s seconds. (DATA_API3)" % (time() - start_time))
+                #_logger.info("No Image retrieval currently")
 
     except:
         audit_failed_write_request(data_api_request, parameters, request_timestamp)

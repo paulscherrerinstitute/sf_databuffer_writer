@@ -36,26 +36,26 @@ def get_writer_request(channels, parameters, start_pulse_id, stop_pulse_id):
 
 
 def get_separate_writer_requests(channels, parameters, start_pulse_id, stop_pulse_id):
+
     camera_channels = []
     bsread_channels = []
 
     for channel in channels:
         if channel.endswith(":FPICTURE"):
-            camera_channels.append([channel])
+            camera_channels.append(channel)
         else:
             bsread_channels.append(channel)
 
     yield get_writer_request(bsread_channels, parameters, start_pulse_id, stop_pulse_id)
 
-    for camera_channel in camera_channels:
-        camera_name = camera_channel[0][:-9]
-
+    if len(camera_channels) > 0: 
         new_parameters = copy.deepcopy(parameters)
         if new_parameters["output_file"] != "/dev/null":
-            new_parameters["output_file"] += "_" + camera_name + ".h5"
-
-        yield get_writer_request(camera_channel, new_parameters, start_pulse_id, stop_pulse_id)
-
+            if new_parameters["output_file"][-3:] == ".h5":
+                new_parameters["output_file"] = new_parameters["output_file"][:-3] + ".IMAGES.h5"
+            else:
+                new_parameters["output_file"] = new_parameters["output_file"][:-3] + ".IMAGES.h5"
+        yield get_writer_request(camera_channels, new_parameters, start_pulse_id, stop_pulse_id)
 
 def verify_channels(input_channels):
     _logger.info("Verifying limit of max %d bsread channels." % config.BROKER_CHANNELS_LIMIT)
@@ -82,7 +82,7 @@ def transform_range_from_pulse_id_to_timestamp(data_api_request):
     try:
 
         mapping_request = {'range': {'startPulseId': data_api_request["range"]["startPulseId"],
-                                     'endPulseId': data_api_request["range"]["endPulseId"]}}
+                                     'endPulseId': data_api_request["range"]["endPulseId"]+1}}
 
         mapping_response = requests.post(url=config.DATA_API_QUERY_ADDRESS + "/mapping", json=mapping_request).json()
 
