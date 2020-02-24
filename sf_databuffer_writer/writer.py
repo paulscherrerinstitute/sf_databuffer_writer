@@ -159,7 +159,7 @@ def process_message(message, data_retrieval_delay):
         _logger.info("Sleeping finished. Retrieving data.")
 
         start_time = time()
-        if 'channels' in data_api_request and len(data_api_request['channels']) > 0 
+        if 'channels' in data_api_request and len(data_api_request['channels']) > 0:
             if data_api_request['channels'][0]['backend'] != 'sf-imagebuffer':
                 data, data_len = get_data_from_buffer(data_api_request)
                 _logger.info("Data retrieval (%d bytes) took %s seconds." % (data_len, time() - start_time))
