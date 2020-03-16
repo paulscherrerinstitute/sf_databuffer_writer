@@ -13,6 +13,11 @@ _logger = getLogger(__name__)
 
 
 def get_writer_request(channels, parameters, start_pulse_id, stop_pulse_id):
+
+    if "channels" in parameters:
+        _logger.info('Overwriting default channel list with provided "channels" in parameters.')
+        channels = parameters["channels"]
+
     data_api_request = {
         "channels": [{'name': ch, 'backend': config.IMAGE_BACKEND if ch.endswith(":FPICTURE") else config.DATA_BACKEND}
                      for ch in channels],
