@@ -7,13 +7,12 @@ from bsread import PUSH
 from sf_databuffer_writer import config
 from sf_databuffer_writer.broker_manager import BrokerManager, StreamRequestSender
 from sf_databuffer_writer.rest_api import register_rest_interface
-from sf_databuffer_writer.utils import verify_channels
 
 _logger = logging.getLogger(__name__)
 
 
-def start_server(channels, output_port, queue_length, rest_port, audit_trail_only=False, epics_writer_url=None):
-    _logger.info("Writing data for channels: %s", channels)
+def start_server(channels_file, output_port, queue_length, rest_port, audit_trail_only=False, epics_writer_url=None):
+    _logger.info("Writing data for channels from file: %s", channels_file)
     _logger.debug("Setting queue length to %s.", queue_length)
 
     app = bottle.Bottle()
@@ -25,7 +24,7 @@ def start_server(channels, output_port, queue_length, rest_port, audit_trail_onl
                                          epics_writer_url=epics_writer_url)
 
     manager = BrokerManager(request_sender=request_sender,
-                            channels=channels,
+                            channels_file=channels_file,
                             audit_trail_only=audit_trail_only)
 
     register_rest_interface(app, manager)
@@ -34,7 +33,8 @@ def start_server(channels, output_port, queue_length, rest_port, audit_trail_onl
 
     try:
         _logger.info("Starting rest API on port %s." % rest_port)
-        bottle.run(app=app, host="127.0.0.1", port=rest_port)
+        #bottle.run(app=app, host="127.0.0.1", port=rest_port)
+        bottle.run(app=app, host="sf-daq-1", port=rest_port)
     finally:
         pass
 
@@ -42,7 +42,7 @@ def start_server(channels, output_port, queue_length, rest_port, audit_trail_onl
 def run():
     parser = argparse.ArgumentParser(description='bsread broker')
 
-    parser.add_argument("-c", "--channels_file", help="JSON file with channels to buffer.")
+    parser.add_argument("-c", "--channels_file", help="TXT file with channels to buffer.")
 
     parser.add_argument('-o', '--output_port', type=int, default=config.DEFAULT_STREAM_OUTPUT_PORT,
                         help="Port to bind the output stream to.")
@@ -66,16 +66,7 @@ def run():
     # Setup the logging level.
     logging.basicConfig(level=arguments.log_level, format='[%(levelname)s] %(message)s')
 
-    _logger.info("Loading channels list file '%s'.", arguments.channels_file)
-
-    with open(arguments.channels_file) as input_file:
-        file_lines = input_file.readlines()
-        channels = [channel.strip() for channel in file_lines
-                    if not channel.strip().startswith("#") and channel.strip()]
-
-    verify_channels(channels)
-
-    start_server(channels=channels,
+    start_server(channels_file=arguments.channels_file,
                  output_port=arguments.output_port,
                  queue_length=arguments.queue_length,
                  rest_port=arguments.rest_port,

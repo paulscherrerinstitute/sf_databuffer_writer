@@ -9,6 +9,9 @@ from bsread.sender import Sender
 
 from sf_databuffer_writer import config
 from sf_databuffer_writer.utils import get_writer_request, get_separate_writer_requests
+from sf_databuffer_writer.utils import verify_channels
+
+import os
 
 _logger = logging.getLogger(__name__)
 
@@ -25,18 +28,39 @@ def audit_write_request(filename, write_request):
     except Exception as e:
         _logger.error("Error while trying to append request %s to file %s." % (write_request, filename), e)
 
+def read_channels_from_file(channels_file):
+
+    try:
+        last_modified = os.path.getmtime(channels_file) 
+
+        with open(channels_file) as input_file:
+            file_lines = input_file.readlines()
+            channels = [channel.strip() for channel in file_lines
+                        if not channel.strip().startswith("#") and channel.strip()]
+
+        verify_channels(channels)
+    except:
+        _logger.warning(f'{channels_file} is either unreachable or not existing')
+        channels=[]
+        last_modified = None
+
+    return channels, last_modified
+
 
 class BrokerManager(object):
     REQUIRED_PARAMETERS = ["general/created", "general/user", "general/process", "general/instrument", "output_file"]
 
-    def __init__(self, request_sender, channels, audit_filename=None, audit_trail_only=False):
+    def __init__(self, request_sender, channels_file, audit_filename=None, audit_trail_only=False):
 
         if audit_filename is None:
             audit_filename = config.DEFAULT_AUDIT_FILENAME
         self.audit_filename = audit_filename
         _logger.info("Writing requests audit log to file %s." % self.audit_filename)
 
-        self.channels = channels
+        self.channels_file = channels_file
+
+        self.channels, self.channels_filename_last_modified = read_channels_from_file(channels_file)
+
         _logger.info("Starting broker manager with channels %s." % self.channels)
 
         self.current_parameters = None
@@ -137,6 +161,111 @@ class BrokerManager(object):
         self.statistics["last_sent_write_request"] = write_request
         self.statistics["last_sent_write_request_time"] = datetime.now().strftime(config.AUDIT_FILE_TIME_FORMAT)
         self.statistics["n_processed_requests"] += 1
+
+    def retrieve(self, request=None, remote_ip=None, beamline_force=None):
+
+        if not request:
+            return {"status" : "failed", "message" : "request parameters are empty"}
+
+        if not remote_ip:
+            return {"status" : "failed", "message" : "can not identify from which machine request were made"}
+
+        if beamline_force:
+            beamline = beamline_force
+        else:
+            beamline = None
+            if len(remote_ip) > 11:
+                if remote_ip[:11] == "129.129.242":
+                    beamline = "alvra"
+                elif remote_ip[:11] == "129.129.243":
+                    beamline = "bernina"
+                elif remote_ip[:11] == "129.129.246":
+                    beamline = "maloja"
+
+        if not beamline:
+            return {"status" : "failed", "message" : "can not determine from which console request came, so which beamline it's"}
+
+        if "pgroup" not in request:
+            return {"status" : "failed", "message" : "no pgroup in request parameters"}
+        pgroup = request["pgroup"]
+
+        if "start_pulseid" not in request or "stop_pulseid" not in request:
+            return {"status" : "failed", "message" : "no start or stop pluseid provided in request parameters"}
+        start_pulse_id = request["start_pulseid"]
+        stop_pulse_id  = request["stop_pulseid"]
+
+        path_to_pgroup = f'/sf/{beamline}/data/{pgroup}/raw/'
+        if not os.path.exists(path_to_pgroup):
+            return {"status" : "failed", "message" : f'pgroup directory {path_to_pgroup} not reachable'}
+
+        full_path = path_to_pgroup
+        if "directory_name" in request and request["directory_name"] is not None:
+            # TODO cleanup directory_name from request to remove possibility to write to another pgroup folder
+            full_path = path_to_pgroup+request["directory_name"]
+            
+        daq_directory = path_to_pgroup + ".daq"
+        if not os.path.exists(daq_directory):
+            try:
+                os.mkdir(daq_directory)
+            except:
+                return {"status" : "failed", "message" : "no permission or possibility to make daq directory in pgroup space"}
+
+        write_data = False
+        if "channels_list" in request or "camera_list" in request:
+            write_data = True
+
+        if not write_data:
+            return {"status" : "pass", "message" : "everything fine but no request to write any data"}
+         
+        last_run_file = daq_directory + "/LAST_RUN"
+        if not os.path.exists(last_run_file):
+            run_file = open(last_run_file, "w")
+            run_file.write("0")
+            run_file.close()
+
+        run_file = open(last_run_file, "r")
+        last_run = int(run_file.read())
+        run_file.close()
+
+        current_run = last_run + 1
+
+        run_file = open(last_run_file, "w")
+        run_file.write(str(current_run))
+        run_file.close()
+
+        with open(f'{daq_directory}/run_{current_run:06}.json', "w") as request_json_file:
+            json.dump(request, request_json_file, indent=2)
+
+        current_parameters = {
+                     "general/user": str(pgroup[1:6]),
+                     "general/process": __name__,
+                     "general/created": str(datetime.now()),
+                     "general/instrument": beamline
+        }
+
+        if not os.path.exists(full_path):
+            try:
+                os.makedirs(full_path)
+            except:
+                return {"status" : "failed", "message" : f'no permission or possibility to make directory in pgroup space {full_path}'}
+
+
+        if "channels_list" in request:
+            current_parameters["output_file"] = f'{full_path}/run_{current_run:06}.BSREAD.h5'
+            write_request = get_writer_request(request["channels_list"], current_parameters,
+                                               start_pulse_id, stop_pulse_id)
+            #if cadump list is provided
+            #write_request in get_separate_writer_requests(channels, current_parameters,
+            #                                                  start_pulse_id, stop_pulse_id)
+            self._process_write_request(write_request, sendto_epics_writer=False)
+ 
+        if "camera_list" in request:
+            current_parameters["output_file"] = f'{full_path}/run_{current_run:06}.CAMERAS.h5'
+            write_request = get_writer_request(request["camera_list"], current_parameters,
+                                               start_pulse_id, stop_pulse_id)
+            self._process_write_request(write_request, sendto_epics_writer=False) 
+
+        return {"status" : "ok", "message" : str(current_run) }
 
     def get_statistics(self):
         return self.statistics

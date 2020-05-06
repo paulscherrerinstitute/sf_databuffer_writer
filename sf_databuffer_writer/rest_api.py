@@ -51,6 +51,10 @@ def register_rest_interface(app, manager):
 
         manager.stop_writer(int(pulse_id))
 
+    @app.post("/retrieve_from_buffers")
+    def retrieve_from_buffers():
+        return manager.retrieve(request=bottle.request.json, remote_ip=bottle.request.remote_addr)
+
     @app.error(500)
     def error_handler_500(error):
         bottle.response.content_type = 'application/json'
