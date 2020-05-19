@@ -249,6 +249,24 @@ class BrokerManager(object):
             except:
                 return {"status" : "failed", "message" : f'no permission or possibility to make directory in pgroup space {full_path}'}
 
+        if "pv_list" in request:
+            write_request = get_writer_request(request["pv_list"], current_parameters,
+                                               start_pulse_id, stop_pulse_id)
+            def send_epics_request():
+                try:
+
+                    epics_writer_request = {
+                                "range": json.loads(write_request["data_api_request"])["range"],
+                                "parameters": json.loads(write_request["parameters"]),
+                                "channels" : request["pv_list"],
+                                "retrieval_url" : "https://data-api.psi.ch/sf"
+                            }
+                    epics_writer_request["parameters"]["output_file"] = f'{full_path}/run_{current_run:06}.PVCHANNELS.h5'
+                    requests.put(url=self.request_sender.epics_writer_url, json=epics_writer_request)
+                except Exception as e:
+                    _logger.error("Error while trying to forward the write request to the epics writer.", e)
+
+            Thread(target=send_epics_request).start()
 
         if "channels_list" in request:
             current_parameters["output_file"] = f'{full_path}/run_{current_run:06}.BSREAD.h5'
@@ -258,7 +276,7 @@ class BrokerManager(object):
             #write_request in get_separate_writer_requests(channels, current_parameters,
             #                                                  start_pulse_id, stop_pulse_id)
             self._process_write_request(write_request, sendto_epics_writer=False)
- 
+
         if "camera_list" in request:
             current_parameters["output_file"] = f'{full_path}/run_{current_run:06}.CAMERAS.h5'
             write_request = get_writer_request(request["camera_list"], current_parameters,
