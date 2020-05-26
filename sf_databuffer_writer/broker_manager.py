@@ -12,6 +12,7 @@ from sf_databuffer_writer.utils import get_writer_request, get_separate_writer_r
 from sf_databuffer_writer.utils import verify_channels
 
 import os
+from subprocess import Popen
 
 _logger = logging.getLogger(__name__)
 
@@ -211,7 +212,7 @@ class BrokerManager(object):
                 return {"status" : "failed", "message" : "no permission or possibility to make daq directory in pgroup space"}
 
         write_data = False
-        if "channels_list" in request or "camera_list" in request:
+        if "channels_list" in request or "camera_list" in request or "pv_list" in request or "detectors" in request:
             write_data = True
 
         if not write_data:
@@ -232,6 +233,10 @@ class BrokerManager(object):
         run_file = open(last_run_file, "w")
         run_file.write(str(current_run))
         run_file.close()
+
+        request["beamline"]     = beamline
+        request["run_number"]   = current_run
+        request["request_time"] = str(datetime.now())
 
         with open(f'{daq_directory}/run_{current_run:06}.json', "w") as request_json_file:
             json.dump(request, request_json_file, indent=2)
@@ -282,6 +287,15 @@ class BrokerManager(object):
             write_request = get_writer_request(request["camera_list"], current_parameters,
                                                start_pulse_id, stop_pulse_id)
             self._process_write_request(write_request, sendto_epics_writer=False) 
+
+        if "detectors" in request:
+            for detector in request["detectors"]:
+                retrieve_command=f'/home/dbe/git/sf_daq_buffer/scripts/retrieve_detector_data.sh {detector} {start_pulse_id} {stop_pulse_id} {full_path}/run_{current_run:06}.{detector}.h5'
+                process_log_file=open(f'{daq_directory}/run_{current_run:06}.{detector}.log','w')
+                _logger.info("Starting detector retrieve command %s " % retrieve_command)
+                process=Popen(retrieve_command, shell=True, stdout=process_log_file, stderr=process_log_file)
+                process_log_file.close()
+                _logger.info(f'Retrieve for detector {detector} finished')
 
         return {"status" : "ok", "message" : str(current_run) }
 

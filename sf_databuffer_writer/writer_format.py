@@ -78,8 +78,11 @@ class DataBufferH5Writer(object):
 
                 data = channel_data["data"]
 
-                if not data and config.ERROR_IF_NO_DATA:
-                    raise ValueError("There is no data for channel %s." % name)
+                if not data:
+                    if config.ERROR_IF_NO_DATA:
+                        raise ValueError("There is no data for channel %s." % name)
+                    else:
+                        _logger.error("There is no data for channel %s." % name)
                 
                 channel_type = channel_data["configs"][0]["type"]
                 channel_shape = channel_data["configs"][0]["shape"]
@@ -167,8 +170,11 @@ class CompactDataBufferH5Writer(DataBufferH5Writer):
                 _logger.debug("Formatting data for channel %s." % name)
 
                 data = channel_data["data"]
-                if not data and config.ERROR_IF_NO_DATA:
-                    raise ValueError("There is no data for channel %s." % name)
+                if not data:
+                    if config.ERROR_IF_NO_DATA:
+                        raise ValueError("There is no data for channel %s." % name)
+                    else:
+                        _logger.error("There is no data for channel %s." % name)
 
                 channel_type = channel_data["configs"][0]["type"]
                 channel_shape = channel_data["configs"][0]["shape"]
