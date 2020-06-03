@@ -60,7 +60,7 @@ def write_data_to_file(parameters, json_data):
         raise ValueError("Received parameters from broker are empty. parameters=%s" % parameters)
     
     output_file = parameters["output_file"]
-    output_file_format = parameters.get("output_file_format", "extended")
+    output_file_format = parameters.get("output_file_format", "compact")
 
     _logger.info("Writing data to output_file %s with output_file_format %s.", output_file, output_file_format)
 

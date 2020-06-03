@@ -195,6 +195,11 @@ class BrokerManager(object):
         start_pulse_id = request["start_pulseid"]
         stop_pulse_id  = request["stop_pulseid"]
 
+        rate_multiplicator = 1
+        if "rate_multiplicator" in request:
+            if request["rate_multiplicator"] not in [1, 2, 4, 10, 20, 100]:
+                return {"status" : "failed", "message" : "rate_multiplicator is not allowed one"}
+
         path_to_pgroup = f'/sf/{beamline}/data/{pgroup}/raw/'
         if not os.path.exists(path_to_pgroup):
             return {"status" : "failed", "message" : f'pgroup directory {path_to_pgroup} not reachable'}
@@ -210,6 +215,9 @@ class BrokerManager(object):
                 os.mkdir(daq_directory)
             except:
                 return {"status" : "failed", "message" : "no permission or possibility to make daq directory in pgroup space"}
+
+        if os.path.exists(f'{daq_directory}/CLOSED'):
+            return {"status" : "failed", "message" : f'{path_to_pgroup} is closed for writing'}
 
         write_data = False
         if "channels_list" in request or "camera_list" in request or "pv_list" in request or "detectors" in request:
