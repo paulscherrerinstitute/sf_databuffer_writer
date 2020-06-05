@@ -87,10 +87,102 @@ for data, image buffer retrieval and cadump)
 <a id="Example1"></a>
 ## Example1
 
+ Command line example how to use broker to request a retireve of data is daq_client.py. To run is enough to have python > 3.6 and standard packages (requests, os, json)
+(so standard PSI python environment is good for this purpose):
+```bash
+$ module load psi-python36/4.4.0 
+$ python daq_client.py -h
+usage: daq_client.py [-h] [-p PGROUP] [-d OUTPUT_DIRECTORY] [-c CHANNELS_FILE]
+                     [-e EPICS_FILE] [-f FILE_DETECTORS]
+                     [-r RATE_MULTIPLICATOR] [-s SCAN_STEP_FILE]
+                     [--start_pulseid START_PULSEID]
+                     [--stop_pulseid STOP_PULSEID]
+
+test broker
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -p PGROUP, --pgroup PGROUP
+                        pgroup, example p12345
+  -d OUTPUT_DIRECTORY, --output_directory OUTPUT_DIRECTORY
+                        output directory for the data, relative path to the
+                        raw directory in the pgroup
+  -c CHANNELS_FILE, --channels_file CHANNELS_FILE
+                        TXT file with list channels
+  -e EPICS_FILE, --epics_file EPICS_FILE
+                        TXT file with list of epics channels to save
+  -f FILE_DETECTORS, --file_detectors FILE_DETECTORS
+                        JSON file with the detector list
+  -r RATE_MULTIPLICATOR, --rate_multiplicator RATE_MULTIPLICATOR
+                        rate multiplicator (1(default): 100Hz, 2: 50Hz,)
+  -s SCAN_STEP_FILE, --scan_step_file SCAN_STEP_FILE
+                        JSON file with the scan step information
+  --start_pulseid START_PULSEID
+                        start pulseid
+  --stop_pulseid STOP_PULSEID
+                        stop pulseid
+
+``` 
+
 <a id="Example2"></a>
 ## Example2
+
+ Another example is more "start/stop" oriented way of doing data acquistion. To run this example one needs, in addition to daq_config.py, script client_example.py.
+It can also run in a standard PSI environment, but the pulse_id's would be wrong (the proper way to get a pulse_id is to use one of the channel which provide them
+effectively, see client_example.py). So in case one run this example in environment without pyepics, the guessed, fake pulseid would be approximately ok (due to the lock to the 50Hz electricity frequency for accelerator, our 100Hz is not an ideal 100Hz, so it's impossible to make a 100% accurate prediction from time to pulse_id)
+```bash
+. /opt/gfa/python 3.7 # this loads proper environment with pyepics in it
+$ ipython
+Python 3.7.5 (default, Oct 25 2019, 15:51:11)
+Type 'copyright', 'credits' or 'license' for more information
+IPython 7.2.0 -- An enhanced Interactive Python. Type '?' for help.
+
+In [1]: import client_example as client                                                                                                                                   
+
+In [2]: daq_client = client.BrokerClient(pgroup="p12345")                                                                                                                 
+
+In [3]: daq_client.configure(output_directory="test/daq", channels_file="channel_list", rate_multiplicator=2, detectors_file="jf_jf01.json")                              
+
+In [4]: daq_client.run(1000)                                                                                                                                              
+[####################] 99% Run: 2
+success: run number(request_id) is 2
+```
+
+ Note that you can "Ctrl-C" during "run" execution, with it you'll be asked do you want to "record" data which you took from start till pressing "Ctrl-C"
+which is an illustration of the principle of the retrieve-based daq strategy - run(with RUN_NUMBER) will exist only when request to retrieve data is made.
+Data are already recorded and present in buffers.
 
 <a id="Check"></a>
 ## Check
 
+Since we record the request, which channel, detectors etc are asked to be retrieve, we provide also a check scipt, check.py. With it one can check if the result
+of the retrieve is acceptable or some problems exists. Since different sources may run at a frequency different from beam or from each other, it may be 
+normal to get value for each pulse_id from source running at 100Hz, though machine and daq acquisition is running at lower frequency. One can check result 
+of retrieve against different then the machine frequency.
+```
+module load psi-python36/4.4.0
+
+$ python check.py --help
+usage: check.py [-h] [-r RUN_FILE]
+                [--frequency_reduction_factor FREQUENCY_REDUCTION_FACTOR]
+
+check consistency of produced files
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -r RUN_FILE, --run_file RUN_FILE
+                        JSON file from the retrieve process
+  --frequency_reduction_factor FREQUENCY_REDUCTION_FACTOR
+                        beam rate, default 1 means 100Hz (2: 50Hz, 4:
+                        25Hz....) (overwrites one from json file)
+
+$ python check.py -r /sf/alvra/data/p18390/raw/.daq/run_000151.json 
+Result of consistency check (summary) : False 
+    Reason : SARES11-SPEC125-M1.processing_parameters number of pulse_id is different from expected : 998 vs 1000 
+    Reason : SARES11-SPEC125-M1.roi_background_x_profile number of pulse_id is different from expected : 998 vs 1000 
+    Reason : SARES11-SPEC125-M1.roi_signal_x_profile number of pulse_id is different from expected : 998 vs 1000 
+    Reason : SARES11-SPEC125-M1:FPICTURE number of pulse_id is different from expected : 998 vs 1000 
+
+
+```
 
