@@ -1,0 +1,31 @@
+{
+    "scan_name": "scan_test",
+    "motors_pv_name": [
+        "motor1_PV",
+        "motor2_PV"
+    ],
+    "motors_name": [
+        "motor1",
+        "motor2"
+    ],
+    "motors_offset": [
+        10.0,
+        -5.0
+    ],
+    "motors_coefficient": [
+        1.0,
+        0.2
+    ],
+    "motors_readback_value": [
+        1.01,
+        4.1
+    ],
+    "motors_value": [
+        1.0,
+        4.0
+    ],
+    "motors_readback_raw": [
+        11.01,
+        -3.9975
+    ]
+}

@@ -1,0 +1,10 @@
+#PULSE_ID's beam synchronous
+SLAAR11-LTIM01-EVR0:RX-PULSEID
+#BUNCH-OK, beam synchronous, but not changing every pulse
+SIN-CVME-TIFGUN-EVR0:BUNCH-1-OK
+# some epic value
+SAROP21-CVME-PBPS2:Lnk9Ch1-HV_SET
+# some value which is changing frequent, so may be beam synchronous
+SARBD01-DBPM040:Q1
+
+SARES11-EVSP-010:INTERMEDIATE
