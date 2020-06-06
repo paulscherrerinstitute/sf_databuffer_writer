@@ -249,6 +249,8 @@ class BrokerManager(object):
         with open(f'{daq_directory}/run_{current_run:06}.json', "w") as request_json_file:
             json.dump(request, request_json_file, indent=2)
 
+        output_files_list = []
+
         current_parameters = {
                      "general/user": str(pgroup[1:6]),
                      "general/process": __name__,
@@ -265,6 +267,8 @@ class BrokerManager(object):
         if "pv_list" in request:
             write_request = get_writer_request(request["pv_list"], current_parameters,
                                                start_pulse_id, stop_pulse_id)
+            output_file_epics = f'{full_path}/run_{current_run:06}.PVCHANNELS.h5'
+            output_files_list.append(output_file_epics)
             def send_epics_request():
                 try:
 
@@ -274,7 +278,7 @@ class BrokerManager(object):
                                 "channels" : request["pv_list"],
                                 "retrieval_url" : "https://data-api.psi.ch/sf"
                             }
-                    epics_writer_request["parameters"]["output_file"] = f'{full_path}/run_{current_run:06}.PVCHANNELS.h5'
+                    epics_writer_request["parameters"]["output_file"] = output_file_epics
                     requests.put(url=self.request_sender.epics_writer_url, json=epics_writer_request)
                 except Exception as e:
                     _logger.error("Error while trying to forward the write request to the epics writer.", e)
@@ -282,7 +286,9 @@ class BrokerManager(object):
             Thread(target=send_epics_request).start()
 
         if "channels_list" in request:
-            current_parameters["output_file"] = f'{full_path}/run_{current_run:06}.BSREAD.h5'
+            output_file_bsread = f'{full_path}/run_{current_run:06}.BSREAD.h5'
+            output_files_list.append(output_file_bsread)
+            current_parameters["output_file"] = output_file_bsread
             write_request = get_writer_request(request["channels_list"], current_parameters,
                                                start_pulse_id, stop_pulse_id)
             #if cadump list is provided
@@ -291,19 +297,47 @@ class BrokerManager(object):
             self._process_write_request(write_request, sendto_epics_writer=False)
 
         if "camera_list" in request:
-            current_parameters["output_file"] = f'{full_path}/run_{current_run:06}.CAMERAS.h5'
+            output_file_cameras = f'{full_path}/run_{current_run:06}.CAMERAS.h5'
+            output_files_list.append(output_file_cameras)
+            current_parameters["output_file"] = output_file_cameras
             write_request = get_writer_request(request["camera_list"], current_parameters,
                                                start_pulse_id, stop_pulse_id)
             self._process_write_request(write_request, sendto_epics_writer=False) 
 
         if "detectors" in request:
             for detector in request["detectors"]:
-                retrieve_command=f'/home/dbe/git/sf_daq_buffer/scripts/retrieve_detector_data.sh {detector} {start_pulse_id} {stop_pulse_id} {full_path}/run_{current_run:06}.{detector}.h5'
+                output_file_detector = f'{full_path}/run_{current_run:06}.{detector}.h5'
+                output_files_list.append(output_file_detector)
+                retrieve_command=f'/home/dbe/git/sf_daq_buffer/scripts/retrieve_detector_data.sh {detector} {start_pulse_id} {stop_pulse_id} {output_file_detector}'
                 process_log_file=open(f'{daq_directory}/run_{current_run:06}.{detector}.log','w')
                 _logger.info("Starting detector retrieve command %s " % retrieve_command)
                 process=Popen(retrieve_command, shell=True, stdout=process_log_file, stderr=process_log_file)
                 process_log_file.close()
                 _logger.info(f'Retrieve for detector {detector} finished')
+
+        if "scan_info" in request:
+            request_scan_info = request["scan_info"]
+            if "scan_name" in request_scan_info:
+                scan_name = request_scan_info["scan_name"]
+                scan_dir = path_to_pgroup+"/scan_info"
+                if not os.path.exists(scan_dir):
+                    os.makedirs(scan_dir)
+                scan_info_file = scan_dir+"/"+scan_name+".json"
+                if not os.path.exists(scan_info_file):
+                    scan_info = {"scan_files" : [], "scan_parameters" : {"Id" : request_scan_info.get("motors_pv_name"), "name": request_scan_info.get("motors_name"), "offset": request_scan_info.get("motors_offset"), "conversion_factor": request_scan_info.get("motors_coefficient")}, "scan_readbacks": [], "scan_step_info": [], "scan_values": [], "scan_readbacks_raw": [], "pulseIds": []} 
+                else:
+                    with open(scan_info_file) as json_file:
+                        scan_info = json.load(json_file)
+                scan_info["scan_readbacks"].append(request_scan_info.get("motors_readback_value",[]))
+                scan_info["scan_values"].append(request_scan_info.get("motors_value",[]))
+                scan_info["scan_step_info"].append(request_scan_info.get("step_info"))
+                scan_info["scan_readbacks_raw"].append(request_scan_info.get("motors_readback_raw",[]))
+
+                scan_info["scan_files"].append(output_files_list)
+                scan_info["pulseIds"].append([start_pulse_id, stop_pulse_id])
+
+                with open(scan_info_file, 'w') as json_file:
+                    json.dump(scan_info, json_file, indent=4)
 
         return {"status" : "ok", "message" : str(current_run) }
 
