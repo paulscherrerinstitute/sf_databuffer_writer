@@ -116,13 +116,8 @@ class BrokerClient:
     def run(self, number_frames=1000):
 
         self.start()
-# looks like data_api (needs pulse_id-1) for successful retrieve
-        if self.start_pulseid%self.rate_multiplicator == 0:
-            self.start_pulseid -= 1
 
         stop_pulseid = int(self.start_pulseid + number_frames*self.rate_multiplicator-1)
-        if stop_pulseid%self.rate_multiplicator == 0:
-            stop_pulseid += 1
 
         last_known_run = int(self.last_run) if self.last_run is not None else -1
         def signal_handler(sig, frame):
