@@ -199,6 +199,17 @@ class BrokerManager(object):
         if "rate_multiplicator" in request:
             if request["rate_multiplicator"] not in [1, 2, 4, 10, 20, 100]:
                 return {"status" : "failed", "message" : "rate_multiplicator is not allowed one"}
+            rate_multiplicator = request["rate_multiplicator"]
+
+# to be sure that interesting (corresponding to beam rate) pulse_id are covered by the request call
+# (looks like data and image buffer make (start,stop), while detector buffer [start,stop])
+        adjusted_start_pulse_id = start_pulse_id
+        if adjusted_start_pulse_id%rate_multiplicator == 0:
+            adjusted_start_pulse_id -= 1
+
+        adjusted_stop_pulse_id = stop_pulse_id
+        if adjusted_stop_pulse_id%rate_multiplicator == 0:
+            adjusted_stop_pulse_id += 1
 
         path_to_pgroup = f'/sf/{beamline}/data/{pgroup}/raw/'
         if not os.path.exists(path_to_pgroup):
@@ -266,7 +277,7 @@ class BrokerManager(object):
 
         if "pv_list" in request:
             write_request = get_writer_request(request["pv_list"], current_parameters,
-                                               start_pulse_id, stop_pulse_id)
+                                               adjuster_start_pulse_id, adjusted_stop_pulse_id)
             output_file_epics = f'{full_path}/run_{current_run:06}.PVCHANNELS.h5'
             output_files_list.append(output_file_epics)
             def send_epics_request():
@@ -290,10 +301,7 @@ class BrokerManager(object):
             output_files_list.append(output_file_bsread)
             current_parameters["output_file"] = output_file_bsread
             write_request = get_writer_request(request["channels_list"], current_parameters,
-                                               start_pulse_id, stop_pulse_id)
-            #if cadump list is provided
-            #write_request in get_separate_writer_requests(channels, current_parameters,
-            #                                                  start_pulse_id, stop_pulse_id)
+                                               adjusted_start_pulse_id, adjusted_stop_pulse_id)
             self._process_write_request(write_request, sendto_epics_writer=False)
 
         if "camera_list" in request:
@@ -301,7 +309,7 @@ class BrokerManager(object):
             output_files_list.append(output_file_cameras)
             current_parameters["output_file"] = output_file_cameras
             write_request = get_writer_request(request["camera_list"], current_parameters,
-                                               start_pulse_id, stop_pulse_id)
+                                               adjusted_start_pulse_id, adjusted_stop_pulse_id)
             self._process_write_request(write_request, sendto_epics_writer=False) 
 
         if "detectors" in request:
