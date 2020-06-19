@@ -192,6 +192,11 @@ class BrokerManager(object):
 
         if "start_pulseid" not in request or "stop_pulseid" not in request:
             return {"status" : "failed", "message" : "no start or stop pluseid provided in request parameters"}
+        try:
+            request["start_pulseid"] = int(request["start_pulseid"])
+            request["stop_pulseid"] = int(request["stop_pulseid"])
+        except:
+            return {"status" : "failed", "message" : "bad start or stop pluseid provided in request parameters"} 
         start_pulse_id = request["start_pulseid"]
         stop_pulse_id  = request["stop_pulseid"]
 
@@ -236,7 +241,10 @@ class BrokerManager(object):
 
         if not write_data:
             return {"status" : "pass", "message" : "everything fine but no request to write any data"}
-         
+
+        if "detectors" in request and type(request["detectors"]) is not dict:
+            return {"status" : "failed", "message" : f'{request["detectors"]} is not dictionary'}        
+ 
         last_run_file = daq_directory + "/LAST_RUN"
         if not os.path.exists(last_run_file):
             run_file = open(last_run_file, "w")
@@ -316,12 +324,18 @@ class BrokerManager(object):
             for detector in request["detectors"]:
                 output_file_detector = f'{full_path}/run_{current_run:06}.{detector}.h5'
                 output_files_list.append(output_file_detector)
-                retrieve_command=f'/home/dbe/git/sf_daq_buffer/scripts/retrieve_detector_data.sh {detector} {start_pulse_id} {stop_pulse_id} {output_file_detector}'
+                det_start_pulse_id = 0
+                det_stop_pulse_id = stop_pulse_id
+                for p in range(start_pulse_id, stop_pulse_id+1):
+                    if p%rate_multiplicator == 0:
+                        det_stop_pulse_id = p
+                        if det_start_pulse_id == 0:
+                            det_start_pulse_id = p
+                retrieve_command=f'/home/dbe/git/sf_daq_buffer/scripts/retrieve_detector_data.sh {detector} {det_start_pulse_id} {det_stop_pulse_id} {output_file_detector} {rate_multiplicator}'
                 process_log_file=open(f'{daq_directory}/run_{current_run:06}.{detector}.log','w')
                 _logger.info("Starting detector retrieve command %s " % retrieve_command)
                 process=Popen(retrieve_command, shell=True, stdout=process_log_file, stderr=process_log_file)
                 process_log_file.close()
-                _logger.info(f'Retrieve for detector {detector} finished')
 
         if "scan_info" in request:
             request_scan_info = request["scan_info"]
