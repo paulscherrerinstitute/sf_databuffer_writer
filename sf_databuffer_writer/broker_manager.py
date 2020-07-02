@@ -202,19 +202,20 @@ class BrokerManager(object):
 
         rate_multiplicator = 1
         if "rate_multiplicator" in request:
-            if request["rate_multiplicator"] not in [1, 2, 4, 10, 20, 100]:
+            if request["rate_multiplicator"] not in [1, 2, 4, 8, 10, 20, 40, 50, 100]:
                 return {"status" : "failed", "message" : "rate_multiplicator is not allowed one"}
             rate_multiplicator = request["rate_multiplicator"]
 
 # to be sure that interesting (corresponding to beam rate) pulse_id are covered by the request call
-# (looks like data and image buffer make (start,stop), while detector buffer [start,stop])
         adjusted_start_pulse_id = start_pulse_id
-        if adjusted_start_pulse_id%rate_multiplicator == 0:
-            adjusted_start_pulse_id -= 1
-
         adjusted_stop_pulse_id = stop_pulse_id
-        if adjusted_stop_pulse_id%rate_multiplicator == 0:
-            adjusted_stop_pulse_id += 1
+
+        if rate_multiplicator != 1:
+            if adjusted_start_pulse_id%rate_multiplicator == 0:
+                adjusted_start_pulse_id -= 1
+
+            if adjusted_stop_pulse_id%rate_multiplicator == 0:
+                adjusted_stop_pulse_id += 1
 
         path_to_pgroup = f'/sf/{beamline}/data/{pgroup}/raw/'
         if not os.path.exists(path_to_pgroup):
