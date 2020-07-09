@@ -51,10 +51,22 @@ parameters["stop_pulseid"]  = 2000 # corresponding to a time of test/use. This i
 - "channels_list" : python list with the source name from data buffer (don't put CAMERA's images here, but CAMERA processed parameters)
 - "camera_list" : python list with name of CAMERA's (complete name, with :FPICTURE at the end)
 - "pv_list" : python list with name of epics PV to retrieve from archiver by cadump
-- "detectors" : python dictionary, currently containing name of jungfrau detector (e.g. JF01T03V01) as key and empty dictionary as a value (to allow to send to retrieve additional parameters, like ROI, compression etc)
+- "detectors" : python dictionary, containing name of jungfrau detector (e.g. JF01T03V01) as key and a dictionary with parameters as a value, see [Detector parameters](#detector_parameters) for available options
 - "scan_info" : python dictionary to specify that this request belongs to a particular scan (if proper information is provided (for example see scan_step.json in this directory), the appropriate scan_info json file will be created inside raw/../scan_info/ directory (similar to what eco and run_control did in res/ directory))
 
  Successful request needs to have at least one list non-empty in request (otherwise there is nothing to ask to retrieve)
+
+<a id="detector_parameters"></a>
+#### Detector parameters
+- `compression (bool)`: apply bitshuffle+lz4 compression, defaults to True
+- `adc_to_energy (bool)`: apply gain and pedestal corrections, converting raw detector values into energy, defaults to True
+
+The following parameters apply only when `conversion = True`, otherwise they are ignored:
+- `mask (bool)`: perform masking of bad pixels (assign them to 0), defaults to True
+- `mask_double_pixels (bool)`: also perform masking of double pixels (only applies if `mask = True`), defaults to True
+- `geometry (bool)`: apply geometry correction, defaults to False
+- `gap_pixels (bool)`: add gap pixels between detector chips, defaults to True
+- `factor (float, None)`: divide all pixel values by a factor and round the result, saving them as int32, keep the original values and type if None, defaults to None
 
 <a id="bookkeeping"></a>
 ### Bookkeeping
