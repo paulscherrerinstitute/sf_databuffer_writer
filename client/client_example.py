@@ -80,7 +80,7 @@ class BrokerClient:
 
         try:
             beamline=get_beamline()
-            last_run_file = f'/sf/{beamline}/data/{self.pgroup}/raw/.daq/LAST_RUN'
+            last_run_file = f'/sf/{beamline}/data/{self.pgroup}/raw/run_info/LAST_RUN'
             if os.path.exists(last_run_file):
                 run_file = open(last_run_file, "r")
                 self.last_run = int(run_file.read())
