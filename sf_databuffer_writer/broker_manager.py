@@ -245,6 +245,10 @@ class BrokerManager(object):
 
         if "detectors" in request and type(request["detectors"]) is not dict:
             return {"status" : "failed", "message" : f'{request["detectors"]} is not dictionary'}        
+
+        if "channels_list" in request:
+            request["channels_list"] = list(set(request["channels_list"]))
+            request["channels_list"].sort()
  
         last_run_file = daq_directory + "/LAST_RUN"
         if not os.path.exists(last_run_file):
@@ -266,7 +270,9 @@ class BrokerManager(object):
         request["run_number"]   = current_run
         request["request_time"] = str(datetime.now())
 
-        with open(f'{daq_directory}/run_{current_run:06}.json', "w") as request_json_file:
+        run_file_json = f'{daq_directory}/run_{current_run:06}.json'
+
+        with open(run_file_json, "w") as request_json_file:
             json.dump(request, request_json_file, indent=2)
 
         output_files_list = []
@@ -327,12 +333,19 @@ class BrokerManager(object):
                 output_files_list.append(output_file_detector)
                 det_start_pulse_id = 0
                 det_stop_pulse_id = stop_pulse_id
+
+                det_conversion  = request["detectors"][detector].get("conversion", False)
+                det_compression = request["detectors"][detector].get("compression", False)
+                det_export = 0
+                if det_conversion or det_compression:
+                    det_export = 1
+
                 for p in range(start_pulse_id, stop_pulse_id+1):
                     if p%rate_multiplicator == 0:
                         det_stop_pulse_id = p
                         if det_start_pulse_id == 0:
                             det_start_pulse_id = p
-                retrieve_command=f'/home/dbe/git/sf_daq_buffer/scripts/retrieve_detector_data.sh {detector} {det_start_pulse_id} {det_stop_pulse_id} {output_file_detector} {rate_multiplicator}'
+                retrieve_command=f'/home/dbe/git/sf_daq_buffer/scripts/retrieve_detector_data.sh {detector} {det_start_pulse_id} {det_stop_pulse_id} {output_file_detector} {rate_multiplicator} {det_export} {run_file_json}'
                 process_log_file=open(f'{daq_directory}/run_{current_run:06}.{detector}.log','w')
                 _logger.info("Starting detector retrieve command %s " % retrieve_command)
                 process=Popen(retrieve_command, shell=True, stdout=process_log_file, stderr=process_log_file)
