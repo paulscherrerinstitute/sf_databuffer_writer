@@ -59,11 +59,13 @@ parameters["stop_pulseid"]  = 2000 # corresponding to a time of test/use. This i
 <a id="bookkeeping"></a>
 ### Bookkeeping
 
- In case of successful (accepted by broker) request, complete parameters used for it will be saved in a special directory on raw/.daq/ with name run_RUN_NUMBER.json:
+ In case of successful (accepted by broker) request, complete parameters used for it will be saved in a special directory on raw/run_info/ with name run_RUN_NUMBER.json (to not have too many files in one directory runs are splitted by 1000, so directory 003000/ contains information about runs with numbers 3000-3999):
 ```bash
-root@sf-daq-1 .daq]# pwd
-/sf/maloja/data/p18493/raw/.daq
-[root@sf-daq-1 .daq]# cat run_000001.json 
+# pwd
+/sf/maloja/data/p18493/raw/run_info
+# ls
+000000  LAST_RUN
+# cat 000000/run_000001.json 
 {
   "pgroup": "p18493",
   "directory_name": "covid/detector_test2",
@@ -81,7 +83,7 @@ root@sf-daq-1 .daq]# pwd
   "request_time": "2020-05-27 18:06:39.772622"
 }
 ``` 
- In addition we log in this .daq/ directory the output of the retrieve procedures (currently only for Jungfrau detectors, but plan is to do the same
+ In addition we log in this run_info/ directory the output of the retrieve procedures (currently only for Jungfrau detectors, but plan is to do the same
 for data, image buffer retrieval and cadump)
 
 <a id="Example1"></a>
@@ -176,7 +178,7 @@ optional arguments:
                         beam rate, default 1 means 100Hz (2: 50Hz, 4:
                         25Hz....) (overwrites one from json file)
 
-$ python check.py -r /sf/alvra/data/p18390/raw/.daq/run_000151.json 
+$ python check.py -r /sf/alvra/data/p18390/raw/run_info/000000/run_000151.json 
 Result of consistency check (summary) : False 
     Reason : SARES11-SPEC125-M1.processing_parameters number of pulse_id is different from expected : 998 vs 1000 
     Reason : SARES11-SPEC125-M1.roi_background_x_profile number of pulse_id is different from expected : 998 vs 1000 

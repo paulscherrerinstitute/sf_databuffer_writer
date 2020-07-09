@@ -225,13 +225,15 @@ class BrokerManager(object):
         if "directory_name" in request and request["directory_name"] is not None:
             # TODO cleanup directory_name from request to remove possibility to write to another pgroup folder
             full_path = path_to_pgroup+request["directory_name"]
-            
-        daq_directory = path_to_pgroup + ".daq"
+
+# TODO : put in in config            
+        DIR_NAME_RUN_INFO = "run_info"
+        daq_directory = f'{path_to_pgroup}{DIR_NAME_RUN_INFO}'
         if not os.path.exists(daq_directory):
             try:
                 os.mkdir(daq_directory)
             except:
-                return {"status" : "failed", "message" : "no permission or possibility to make daq directory in pgroup space"}
+                return {"status" : "failed", "message" : "no permission or possibility to make run_info directory in pgroup space"}
 
         if os.path.exists(f'{daq_directory}/CLOSED'):
             return {"status" : "failed", "message" : f'{path_to_pgroup} is closed for writing'}
@@ -270,7 +272,13 @@ class BrokerManager(object):
         request["run_number"]   = current_run
         request["request_time"] = str(datetime.now())
 
-        run_file_json = f'{daq_directory}/run_{current_run:06}.json'
+        current_run_thousand = current_run//1000*1000
+        run_info_directory = f'{daq_directory}/{current_run_thousand:06}' 
+        if not os.path.exists(run_info_directory):
+            # shouldn't fail here, since before was successful in creation of daq_directory
+            os.mkdir(run_info_directory)
+ 
+        run_file_json = f'{run_info_directory}/run_{current_run:06}.json'
 
         with open(run_file_json, "w") as request_json_file:
             json.dump(request, request_json_file, indent=2)
@@ -346,7 +354,7 @@ class BrokerManager(object):
                         if det_start_pulse_id == 0:
                             det_start_pulse_id = p
                 retrieve_command=f'/home/dbe/git/sf_daq_buffer/scripts/retrieve_detector_data.sh {detector} {det_start_pulse_id} {det_stop_pulse_id} {output_file_detector} {rate_multiplicator} {det_export} {run_file_json}'
-                process_log_file=open(f'{daq_directory}/run_{current_run:06}.{detector}.log','w')
+                process_log_file=open(f'{run_info_directory}/run_{current_run:06}.{detector}.log','w')
                 _logger.info("Starting detector retrieve command %s " % retrieve_command)
                 process=Popen(retrieve_command, shell=True, stdout=process_log_file, stderr=process_log_file)
                 process_log_file.close()
