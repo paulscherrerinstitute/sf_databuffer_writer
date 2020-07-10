@@ -101,9 +101,9 @@ def check_consistency(run_file=None, rate_multiplicator=0):
                                 for i in range(n_pulse_id):
                                     if pulse_id[i] != expected_pulse_id[i]:
                                         pulse_id_check = False
-                                        #print(channel, i, pulse_id[i], pulse_id[0]+i)
+                                        #print(channel, i, pulse_id[i], expected_pulse_id[i])
                                 if not pulse_id_check:
-                                    problems.append(f'{channel} pulse_id are not monotonic, but it is ok if not 100Hz')
+                                    problems.append(f'{channel} pulse_id are not monotonic')
                 bsread_h5py.close()
             except:
                 problems.append(f'Can not read from BSREAD file {bsread_file} may be too early')
@@ -133,7 +133,16 @@ def check_consistency(run_file=None, rate_multiplicator=0):
                                 if pulse_id[i] != expected_pulse_id[i]:
                                     pulse_id_check = False
                             if not pulse_id_check:
-                                problems.append(f'{camera} pulse_id are not monotonic, but it is ok if not 100Hz')
+                                problems.append(f'{camera} pulse_id are not monotonic')
+                        n_images_corrupted = 0
+                        image_data = cameras_h5py[f'/{camera}/data']
+                        for i_image in range(n_pulse_id):
+                            try:
+                                image_try = image_data[i_image]
+                            except:
+                                n_images_corrupted += 1
+                        if n_images_corrupted != 0:
+                            problems.append(f'{camera} {n_images_corrupted} images (from {n_pulse_id}) corrupted, can not read them')
                 cameras_h5py.close()
             except:
                 problems.append(f'Can not read from cameras file {cameras_file} may be too early')
@@ -147,17 +156,17 @@ def check_consistency(run_file=None, rate_multiplicator=0):
             else:
                 try:
                     detector_h5py = h5py.File(detector_file,"r")
-                    pulse_id      = detector_h5py["/pulse_id"][:]
-                    frame_index   = detector_h5py["/frame_index"][:]
-                    is_good_frame = detector_h5py["/is_good_frame"][:]
-                    daq_rec       = detector_h5py["/daq_rec"][:]
+                    pulse_id      = detector_h5py[f'/data/{detector}/pulse_id'][:]
+                    frame_index   = detector_h5py[f'data/{detector}/frame_index'][:]
+                    is_good_frame = detector_h5py[f'/data/{detector}/is_good_frame'][:]
+                    daq_rec       = detector_h5py[f'/data/{detector}/daq_rec'][:]
                     n_pulse_id = len(pulse_id)
                     if len(frame_index) != n_pulse_id or len(is_good_frame) != n_pulse_id or len(daq_rec) != n_pulse_id:
                         problems.append(f'{detector} length of frame_index,is_good_frame,daq_rec is not consistent with pulse_id')
                     if n_pulse_id != expected_number_measurements:
                         problems.append(f'{detector} number of pulse_id is different from expected : {n_pulse_id} vs {expected_number_measurements}')
                     else:
-                        if start_pulse_id != pulse_id[0] or stop_pulse_id != pulse_id[-1]:
+                        if expected_pulse_id[0] != pulse_id[0] or expected_pulse_id[-1] != pulse_id[-1]:
                             problems.append(f'{detector} start/stop pulse_id are not the one which are requested')
                     # todo: check on nan's for pulse_id's
                         frame_index_check = True
@@ -167,16 +176,16 @@ def check_consistency(run_file=None, rate_multiplicator=0):
                             if is_good_frame[i] != 1:
                                 n_frames_bad += 1
                             else:
-                                if frame_index[i] != (frame_index[0]+i):
-                                    frame_index_check = False
-                                if pulse_id[i] != (pulse_id[0]+i):
+                                #if frame_index[i] != (frame_index[0]+i):
+                                #    frame_index_check = False
+                                if pulse_id[i] != expected_pulse_id[i]:
                                     pulse_id_check = False
                         if not frame_index_check:
                             problems.append(f'{detector} frame_index is not monotonic')
                         if n_frames_bad != 0:
                             problems.append(f'{detector} there are bad frames : {n_frames_bad} out of {n_pulse_id}') 
                         if not pulse_id_check:
-                            problems.append(f'{detector} pulse_id are not monotonic, but it is ok if not 100Hz')
+                            problems.append(f'{detector} pulse_id are not monotonic')
                     detector_h5py.close()
                 except:
                     problems.append(f'Can not read from detector file {detector_file} may be too early')
