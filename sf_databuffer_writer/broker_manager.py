@@ -348,12 +348,19 @@ class BrokerManager(object):
                 if det_conversion or det_compression:
                     det_export = 1
 
+                raw_file_name = output_file_detector 
+                if det_export == 1:
+                    raw_file_name = f'{path_to_pgroup}/RAW_DATA/'
+                    if "directory_name" in request and request["directory_name"] is not None:
+                        raw_file_name = raw_file_name + request["directory_name"]
+                    raw_file_name = f'{raw_file_name}/run_{current_run:06}.{detector}.h5'
+
                 for p in range(start_pulse_id, stop_pulse_id+1):
                     if p%rate_multiplicator == 0:
                         det_stop_pulse_id = p
                         if det_start_pulse_id == 0:
                             det_start_pulse_id = p
-                retrieve_command=f'/home/dbe/git/sf_daq_buffer/scripts/retrieve_detector_data.sh {detector} {det_start_pulse_id} {det_stop_pulse_id} {output_file_detector} {rate_multiplicator} {det_export} {run_file_json}'
+                retrieve_command=f'/home/dbe/git/sf_daq_buffer/scripts/retrieve_detector_data.sh {detector} {det_start_pulse_id} {det_stop_pulse_id} {output_file_detector} {rate_multiplicator} {det_export} {run_file_json} {raw_file_name}'
                 process_log_file=open(f'{run_info_directory}/run_{current_run:06}.{detector}.log','w')
                 _logger.info("Starting detector retrieve command %s " % retrieve_command)
                 process=Popen(retrieve_command, shell=True, stdout=process_log_file, stderr=process_log_file)
