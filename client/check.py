@@ -157,10 +157,21 @@ def check_consistency(run_file=None, rate_multiplicator=0):
                 try:
                     detector_h5py = h5py.File(detector_file,"r")
                     pulse_id      = detector_h5py[f'/data/{detector}/pulse_id'][:]
-                    frame_index   = detector_h5py[f'data/{detector}/frame_index'][:]
-                    is_good_frame = detector_h5py[f'/data/{detector}/is_good_frame'][:]
-                    daq_rec       = detector_h5py[f'/data/{detector}/daq_rec'][:]
                     n_pulse_id = len(pulse_id)
+# in case of converted data, frame_index, is_good_frame and daq_rec may be missing
+                    if f'data/{detector}/frame_index' in detector_h5py.keys():
+                        frame_index   = detector_h5py[f'data/{detector}/frame_index'][:]
+                    else:
+                        frame_index = [0] * n_pulse_id
+                    if f'/data/{detector}/is_good_frame' in detector_h5py.keys():
+                        is_good_frame = detector_h5py[f'/data/{detector}/is_good_frame'][:]
+                    else:
+                        is_good_frame = [1] * n_pulse_id
+                    if f'/data/{detector}/daq_rec' in detector_h5py.keys():
+                        daq_rec       = detector_h5py[f'/data/{detector}/daq_rec'][:]
+                    else:
+                        daq_rec = [0] * n_pulse_id
+
                     if len(frame_index) != n_pulse_id or len(is_good_frame) != n_pulse_id or len(daq_rec) != n_pulse_id:
                         problems.append(f'{detector} length of frame_index,is_good_frame,daq_rec is not consistent with pulse_id')
                     if n_pulse_id != expected_number_measurements:
